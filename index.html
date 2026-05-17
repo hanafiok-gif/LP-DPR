@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drini Park Resort – Private Coastal Luxury Retreat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    // === React hooks ===
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // === Lucide icons (from CDN UMD) ===
+    const { 
+      Menu, X, Calendar, Users, MapPin, Phone, Mail, Instagram, Facebook,
+      ChevronRight, ChevronLeft, Anchor, Coffee, Utensils,
+      BedDouble, Maximize, Eye, ArrowRight, Plus, Minus, ChevronDown,
+      PlayCircle, Check, ExternalLink,
+      Wifi, Waves, Car, Store, CreditCard, Sun, Bath, Home, Trees, ArrowUpRight
+    } = LucideReact;
+    const ImageIcon = LucideReact.Image;
+    const MapIcon = LucideReact.Map;
+
+// === 1. NATIVE SMOOTH SCROLL HOOK (LENIS INTEGRATION DYNAMIC LOAD) ===
+function useLenis() {
+  useEffect(() => {
+    let lenis;
+    let rafId;
+
+    const initLenis = () => {
+      if (!window.Lenis) return;
+      
+      // Restriksi mobile dicabut agar smooth scroll berjalan konsisten di semua platform
+      lenis = new window.Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        smoothWheel: true,
+      });
+
+      function raf(time) {
+        lenis.raf(time);
+        rafId = requestAnimationFrame(raf);
+      }
+
+      rafId = requestAnimationFrame(raf);
+    };
+
+    // Load Lenis stable version dynamically
+    if (window.Lenis) {
+      initLenis();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@studio-freight/lenis@1.0.29/dist/lenis.min.js';
+      script.async = true;
+      script.onload = initLenis;
+      document.head.appendChild(script);
+    }
+
+    // Cleanup untuk mencegah memory leak
+    return () => {
+      if (lenis) lenis.destroy();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+}
+
+// === 2. NATIVE SCROLL REVEAL COMPONENT (FRAMER MOTION FALLBACK) ===
+const revealVariants = {
+  fadeUp: { hidden: { opacity: 0, transform: 'translateY(50px)' }, visible: { opacity: 1, transform: 'translateY(0)' } },
+  fadeIn: { hidden: { opacity: 0 }, visible: { opacity: 1 } },
+  zoomIn: { hidden: { opacity: 0, transform: 'scale(0.85)' }, visible: { opacity: 1, transform: 'scale(1)' } },
+  slideLeft: { hidden: { opacity: 0, transform: 'translateX(-60px)' }, visible: { opacity: 1, transform: 'translateX(0)' } },
+  slideRight: { hidden: { opacity: 0, transform: 'translateX(60px)' }, visible: { opacity: 1, transform: 'translateX(0)' } },
+  blur: { hidden: { opacity: 0, transform: 'translateY(20px)' }, visible: { opacity: 1, transform: 'translateY(0)' } },
+};
+
+function ScrollReveal({ children, variant = "fadeUp", delay = 0, duration = 0.8, once = true, className = "", as = "div", id }) {
+  const Tag = as;
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const currentRef = ref.current;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        if (once && currentRef) observer.unobserve(currentRef);
+      } else if (!once) {
+        setIsVisible(false);
+      }
+    }, { margin: "-10% 0px" });
+
+    if (currentRef) observer.observe(currentRef);
+    return () => {
+      if (currentRef) observer.unobserve(currentRef);
+    };
+  }, [once]);
+
+  const style = {
+    ...revealVariants[variant][isVisible ? 'visible' : 'hidden'],
+    transition: `all ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s`,
+    willChange: isVisible ? 'auto' : 'opacity, transform'
+  };
+
+  return <Tag id={id} ref={ref} className={className} style={style}>{children}</Tag>;
+}
+
+// === 3. NATIVE WORD REVEAL COMPONENT ===
+function WordReveal({ text, className = "", delay = 0, duration = 0.6, stagger = 0.08, as = "h2" }) {
+  const Tag = as;
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const words = text.split(" ");
+
+  useEffect(() => {
+    const currentRef = ref.current;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        observer.disconnect();
+      }
+    }, { margin: "-5% 0px" });
+
+    if (currentRef) observer.observe(currentRef);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Tag ref={ref} className={className} style={{ display: "flex", flexWrap: "wrap", gap: "0.25em" }}>
+      {words.map((word, i) => (
+        <span key={i} style={{ overflow: "hidden", display: "inline-block" }}>
+          <span
+            style={{
+              display: "inline-block",
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'translateY(0%)' : 'translateY(100%)',
+              transition: `opacity ${duration}s ease, transform ${duration}s cubic-bezier(0.22, 1, 0.36, 1) ${delay + (i * stagger)}s`
+            }}
+          >
+            {word}
+          </span>
+        </span>
+      ))}
+    </Tag>
+  );
+}
+
+// === HELPER OPTIMASI IMGUR ===
+// Menyisipkan "l" (Large Thumbnail) pada URL imgur untuk menghemat bandwidth hingga 80% pada mode grid
+const getThumbUrl = (url) => url ? url.replace(/\.(jpeg|jpg|png)$/i, 'l.$1') : url;
+
+// === 4. SPLIDE CAROUSEL NATIVE INTEGRATION ===
+function ParallaxCarousel({ items, onOpenDetail }) {
+  const sliderRef = useRef(null);
+  const splideInstanceRef = useRef(null);
+  // Hapus state isLoaded karena menahan rendering visual
+  
+  useEffect(() => {
+    const initSplide = () => {
+      if (!sliderRef.current || !window.Splide) return;
+      
+      const splide = new window.Splide(sliderRef.current, {
+        type: 'loop',          // infinite loop
+        perPage: 3,
+        focus: 'center',       // slide aktif di tengah
+        speed: 1500,           // durasi transisi 1.5 detik — kunci smooth-nya
+        drag: true,            // bisa di-drag
+        flickMaxPages: 3,      // seberapa jauh bisa "dilempar"
+        flickPower: 400,       // kekuatan momentum saat lepas drag
+        updateOnMove: true,
+        pagination: true,
+        arrows: false,         // Hide arrows, rely on drag and click
+        padding: '8%',
+        gap: '1.5rem',
+        easing: 'cubic-bezier(0.25, 1, 0.5, 1)', // ease out expo
+        breakpoints: {
+          1024: { perPage: 2, padding: '5%' },
+          768:  { perPage: 1, padding: '15%', gap: '1rem' },
+          640:  { perPage: 1, padding: '10%', gap: '0.5rem' },
+        },
+      });
+
+      const updateClasses = () => {
+        const slides = splide.Components.Slides.get();
+        const current = splide.index;
+        const total = splide.length;
+
+        slides.forEach((s) => {
+          s.slide.classList.remove('is-center', 'is-prev', 'is-next');
+        });
+
+        // Add is-center to current slide AND its clones
+        slides.forEach(s => {
+          if (s.index === current) s.slide.classList.add('is-center');
+        });
+
+        for (let i = 1; i <= 2; i++) {
+          const prevIdx = (current - i + total) % total;
+          const nextIdx = (current + i) % total;
+          
+          slides.forEach(s => {
+             if (s.index === prevIdx) s.slide.classList.add('is-prev');
+             if (s.index === nextIdx) s.slide.classList.add('is-next');
+          });
+        }
+      };
+
+      splide.on('mounted moved', updateClasses);
+
+      splide.on('click', (slide) => {
+        if (slide.slide.classList.contains('is-center')) {
+          const id = items[slide.index].id;
+          if (id) onOpenDetail(id);
+        } else {
+          splide.go(slide.index);
+        }
+      });
+
+      splide.mount();
+      splideInstanceRef.current = splide;
+    };
+
+    if (window.Splide) {
+      initSplide();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js';
+      script.async = true;
+      script.onload = () => {
+        initSplide();
+      };
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      if (splideInstanceRef.current) splideInstanceRef.current.destroy();
+    };
+  }, [items, onOpenDetail]);
+
+  return (
+    <div className="splide relative select-none w-full max-w-full overflow-hidden pb-12 pt-4" ref={sliderRef}>
+      <div className="splide__track">
+        <ul className="splide__list">
+          {items.map((pkg, idx) => {
+            // Pre-injeksi kelas CSS agar wujud awal sudah presisi tanpa menunggu kalkulasi JS
+            let initialClass = '';
+            if (idx === 0) initialClass = 'is-center';
+            else if (idx === 1) initialClass = 'is-next';
+            else if (idx === items.length - 1) initialClass = 'is-prev';
+
+            return (
+            <li key={`${pkg.id}-${idx}`} className={`splide__slide ${initialClass}`}>
+              <div className="slide-card relative overflow-hidden shadow-2xl bg-neutral-900">
+                <img 
+                  loading={idx < 3 ? "eager" : "lazy"} 
+                  decoding="async" 
+                  src={pkg.img || getThumbUrl(pkg.image)} 
+                  alt={pkg.title || pkg.category} 
+                  className={`w-full h-full object-cover transition-transform duration-700 ease-out ${pkg.id === 'floating' ? 'object-[50%_75%] md:object-[50%_80%]' : pkg.id === 'cake' ? 'object-[50%_85%]' : 'object-center'}`} 
+                />
+                <div className={`absolute inset-0 bg-gradient-to-t ${pkg.title ? 'from-black via-black/60 to-transparent' : 'from-black/80 via-black/20 to-transparent'}`}></div>
+                <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-8">
+                  {pkg.title && (
+                    <h3 className="text-white font-serif uppercase tracking-widest mb-2 drop-shadow-md text-base md:text-[22px]">
+                      {pkg.title}
+                    </h3>
+                  )}
+                  {(pkg.desc || pkg.description) && (
+                    <p className="slide-desc text-neutral-100 text-xs md:text-sm line-clamp-2 leading-relaxed mb-4 drop-shadow-md">{pkg.desc || pkg.description}</p>
+                  )}
+                  <span className="text-[#D4AF37] text-[9px] font-bold uppercase tracking-[0.3em] drop-shadow-md">
+                    {pkg.badge || pkg.category || "Signature Experience"}
+                  </span>
+                </div>
+              </div>
+            </li>
+          )})}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// === 5. KOMPONEN GALERI KHUSUS (GALLERY CARD & LIGHTBOX) ===
+function GalleryCard({ item, onClick }) {
+  return (
+    <div
+      className="relative overflow-hidden rounded-lg cursor-pointer group shadow-md break-inside-avoid mb-6"
+      onClick={() => onClick(item)}
+    >
+      <img
+        src={getThumbUrl(item.image)}
+        alt={`Drini Park Resort - ${item.category}`}
+        loading="lazy"
+        decoding="async"
+        className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
+      />
+      {/* Overlay tipis saat hover tanpa teks */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+    </div>
+  );
+}
+
+function GalleryLightbox({ item, onClose, onPrev, onNext }) {
+  if (!item) return null;
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={onClose}>
+      <div className="relative max-w-6xl w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        <img 
+          src={item.image} 
+          alt={`Drini Park Resort - ${item.category}`}
+          className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-sm" 
+        />
+        
+        {/* Kontrol Navigasi yang Aman untuk Mobile Portrait */}
+        <button onClick={onClose} className="absolute -top-14 right-0 md:-top-6 md:-right-6 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-black transition-colors text-xl focus-ring z-10">✕</button>
+        <button onClick={onPrev} className="absolute left-2 md:-left-12 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-black transition-colors text-lg focus-ring z-10">‹</button>
+        <button onClick={onNext} className="absolute right-2 md:-right-12 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-black transition-colors text-lg focus-ring z-10">›</button>
+      </div>
+    </div>
+  );
+}
+
+// === COMPONENT UTILS ===
+const TiktokIcon = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
+
+// === DATA STATIS ===
+const navItems = ['Home', 'Rooms', 'Signature Experiences', 'Meetings', 'Gallery'];
+
+const roomTypes = [
+  "Superior Sea View", "Superior Garden View", "Deluxe Sea View", "Deluxe Garden View", "Suite Sea View"
+];
+
+const requestOptions = [
+  "Extra Bed", "Romantic Towel", "Slice of Cake", "Romantic Dinner", "Floating Breakfast", "Rooftop BBQ", "Jeep Adventure", "Bajaj Fun Trip", "Other"
+];
+
+const aboutImages = [
+  "https://i.imgur.com/Bu0l9Oi.jpeg", "https://i.imgur.com/oxMN5GC.jpeg", "https://i.imgur.com/aIT0IdB.jpg"
+];
+
+const roomsData = [
+  { name: "Superior Sea View", image: "https://i.imgur.com/ht7F0zP.jpeg", size: "32 m²", bed: "1 King Bed / Twin Bed (Upon request)", tagline: "Where the horizon becomes your most faithful companion.", desc: "Suara ombak adalah satu-satunya alarm yang diizinkan di sini. Cahaya pagi menyebar perlahan di atas permukaan laut — lembut, tanpa tergesa, seperti hari yang mengerti bahwa Anda butuh waktu. Sanctuary ini bukan sekadar kamar dengan sea view. Ia adalah percakapan pribadi antara Anda dan samudra selatan." },
+  { name: "Superior Garden View", image: "https://i.imgur.com/2H30ktC.jpeg", size: "32 m²", bed: "1 King Bed / Twin Bed (Upon request)", tagline: "A private world softened by green and shadow.", desc: "Di balik kanopi tropis yang menaungi, dunia terasa lebih kecil — dan justru di situ, ia terasa lebih utuh. Cahaya menyaring lembut melalui dedaunan di pagi hari; angin membawa aroma tanah basah saat sore menjelang. Untuk mereka yang menemukan kedalaman bukan dalam pemandangan yang luas, melainkan dalam keheningan yang dekat." },
+  { name: "Deluxe Sea View", image: "https://i.imgur.com/ocljqF0.jpeg", size: "42 m²", bed: "1 King Bed / Twin Bed (Upon request)", tagline: "An uninterrupted dialogue with the southern sea.", desc: "Ruang yang lebih lapang bukan berarti lebih banyak furnitur — melainkan lebih banyak laut. Panorama pesisir selatan terbentang tanpa hambatan dari setiap sudut sanctuary ini, membiarkan suara ombak, kualitas cahaya, dan pergerakan air menjadi bagian dari ritme harian Anda. Ini bukan sekadar view. Ini adalah immersion." },
+  { name: "Deluxe Garden View", image: "https://i.imgur.com/4rS8xBv.jpeg", size: "42 m²", bed: "1 King Bed / Twin Bed (Upon request)", tagline: "Depth, shadow, and an uncommon stillness.", desc: "Ada kemewahan yang tidak perlu panorama luas untuk membuktikan diri. Di sanctuary ini, privasi terasa seperti arsitektur itu sendiri — terbangun dari hijau yang mengelilingi, bayangan yang meneduhkan, dan kesunyian yang tidak pernah terasa kosong. Ruang yang melindungi, bukan sekadar mewadahi." },
+  { name: "Suite Sea View", image: "https://i.imgur.com/SKBkcRN.jpeg", size: "65 m²", bed: "1 Super King Bed", tagline: "The most considered space we offer. Nothing left to chance.", desc: "Enam puluh lima meter persegi yang dirancang dengan obsesi terhadap detail — di mana setiap proporsi, setiap sightline, setiap material telah melalui pertimbangan yang panjang. Suite Sea View menguasai panorama pesisir terluas di resort ini — bukan sebagai pamer, melainkan sebagai pernyataan tentang apa yang Anda layak rasakan. Untuk mereka yang tahu perbedaannya." }
+];
+
+const packageDetailsData = {
+  jeep: { title: "Drini Jeep Adventure", subtitle: "Signature Experience", heroImg: "https://i.imgur.com/MNq2vF7.jpeg", description: "Pesisir selatan punya rute yang hanya dikenal oleh mereka yang mau melambat cukup lama untuk menemukannya. Perjalanan eksploratif menyusuri lanskap Drini — bukan untuk tergesa-gesa, melainkan untuk benar-benar melihat.", includes: ["Sewa armada Jeep eksklusif", "Pengemudi profesional / guide", "Pilihan Rute A: Drini - Puncak Krakal - Sarangan - Slili", "Pilihan Rute B: Drini - Watu Kodok - Sepanjang - Nglolang", "Kapasitas 4 orang per Jeep (4 Pax)"], price: "Rp 350.000 / 4 Pax" },
+  bajaj: { title: "Coastal Bajaj Fun Trip", subtitle: "Signature Experience", heroImg: "https://i.imgur.com/6NqMxmV.jpeg", description: "Cara paling estetik untuk mengenal kawasan Drini dari perspektif yang berbeda. Sebuah perjalanan santai yang dirancang sebagai cara menikmati waktu — bukan sebagai itinerary yang harus diselesaikan.", includes: ["Armada Bajaj eksklusif", "Pengemudi lokal yang berpengalaman", "Rute perjalanan: Drini - Slili - Sadranan", "Kapasitas ideal untuk menikmati perjalanan santai"], price: "Rp 350.000" },
+  bbq: { title: "Rooftop BBQ Experience", subtitle: "Signature Experience", heroImg: "https://i.imgur.com/l7TWFGd.png", description: "Angin laut, langit terbuka, dan bara yang menyala perlahan — private BBQ di rooftop ini dirancang untuk mereka yang mengerti bahwa perayaan terbaik tidak membutuhkan kebisingan.", includes: ["Main Course: French Fries / Steamed Rice, Satay Skewers, Smoked Beef, Chicken Slices, Dumplings, Sausages, Whole Corn, Onion, Chinese Cabbage", "Condiments: BBQ Sauce, Black Pepper Sauce, Garlic Butter, Tom Yam Soup", "Dessert: Sliced Fruits", "Beverages: Infused Water, Orange Juice", "Setup meja privat di area Rooftop (Kapasitas 4 Pax)"], price: "Rp 350.000 / 4 Pax" },
+  floating: { title: "Floating Breakfast", subtitle: "Signature Experience", heroImg: "https://i.imgur.com/GhFJvq5.jpeg", description: "Kolam privat. Nampan apung. Waktu yang sepenuhnya milik Anda. Tidak ada jadwal. Tidak ada tergesa. Hanya ketenangan yang mengapung bersama Anda.", includes: ["Pilihan menu sarapan atau kudapan ringan", "Nampan apung eksklusif", "Setup privat di kolam renang tamu", "Layanan terpersonalisasi tanpa disrupsi"], price: "Rp 350.000" },
+  dinner: { title: "Romantic Dinner", subtitle: "Signature Experience", heroImg: "https://i.imgur.com/HpmYccs.jpeg", description: "Meja yang disiapkan hanya untuk berdua — dengan suasana yang hangat, cahaya yang tepat, dan sajian yang diracik dengan penuh perhatian. Untuk momen yang layak diingat lama setelah malam itu berakhir.", includes: ["Appetizer: Shrimp Salad", "Soup: Chicken Cream Soup", "Main Course: Tenderloin Steak", "Dessert: Banana Split", "Beverage: Virgin Mojito & Mineral Water", "Dekorasi meja tematik elegan dan privat"], price: "Rp 500.000 / Couple" },
+  towel: { title: "Romantic Towel", subtitle: "Special Occasions", heroImg: "https://i.imgur.com/A7p4LM2.jpeg", description: "Sebuah detail kecil yang mengubah kamar menjadi ruang perayaan — disiapkan diam-diam sebelum Anda tiba, menunggu tanpa bersuara.", includes: ["Swan towel art arrangement", "Taburan kelopak bunga segar", "Setup rapi sebelum kedatangan", "Sentuhan personal sesuai permintaan"], price: "Rp 150.000 / Setup" },
+  cake: { title: "Slice of Cake", subtitle: "Special Occasions", heroImg: "https://i.imgur.com/oxMN5GC.jpeg", description: "Dari tangan Pastry Chef kami, untuk satu momen yang layak dirayakan — sekecil atau sebesar apa pun alasannya.", includes: ["Potongan kue premium dari Pastry Chef", "Plating dekoratif elegan", "Layanan pengantaran ke kamar yang tepat waktu"], price: "Rp 100.000 / Slice" }
+};
+
+const allPackages = [
+  { id: 'jeep', title: "Drini Jeep Adventure", img: "https://i.imgur.com/MNq2vF7.jpeg", desc: "Pesisir selatan punya rute yang hanya dikenal oleh mereka yang mau melambat cukup lama untuk menemukannya. Perjalanan eksploratif menyusuri lanskap Drini — bukan untuk tergesa-gesa, melainkan untuk benar-benar melihat." },
+  { id: 'bajaj', title: "Coastal Bajaj Fun Trip", img: "https://i.imgur.com/6NqMxmV.jpeg", desc: "Cara paling estetik untuk mengenal kawasan Drini dari perspektif yang berbeda. Sebuah perjalanan santai yang dirancang sebagai cara menikmati waktu — bukan sebagai itinerary yang harus diselesaikan." },
+  { id: 'bbq', title: "Rooftop BBQ Experience", img: "https://i.imgur.com/l7TWFGd.png", desc: "Angin laut, langit terbuka, dan bara yang menyala perlahan — private BBQ di rooftop ini dirancang untuk mereka yang mengerti bahwa perayaan terbaik tidak membutuhkan kebisingan." },
+  { id: 'floating', title: "Floating Breakfast", img: "https://i.imgur.com/GhFJvq5.jpeg", desc: "Kolam privat. Nampan apung. Waktu yang sepenuhnya milik Anda. Tidak ada jadwal. Tidak ada tergesa. Hanya ketenangan yang mengapung bersama Anda." },
+  { id: 'dinner', title: "Romantic Dinner", img: "https://i.imgur.com/HpmYccs.jpeg", desc: "Meja yang disiapkan hanya untuk berdua — dengan suasana yang hangat, cahaya yang tepat, dan sajian yang diracik dengan penuh perhatian. Untuk momen yang layak diingat lama setelah malam itu berakhir." },
+  { id: 'towel', title: "Romantic Towel", img: "https://i.imgur.com/A7p4LM2.jpeg", desc: "Sebuah detail kecil yang mengubah kamar menjadi ruang perayaan — disiapkan diam-diam sebelum Anda tiba, menunggu tanpa bersuara." },
+  { id: 'cake', title: "Slice of Cake", img: "https://i.imgur.com/oxMN5GC.jpeg", desc: "Dari tangan Pastry Chef kami, untuk satu momen yang layak dirayakan — sekecil atau sebesar apa pun alasannya." }
+];
+
+const meetingPackages = [
+  { id: 'halfday', title: "HALF DAY MEETING EXPERIENCE", img: "https://i.imgur.com/t5TdB8L.jpeg", desc: "Untuk pertemuan hingga 4 jam. Akses ruang eksklusif, coffee break, makan siang/malam, dan dukungan profesional." },
+  { id: 'fullday', title: "FULL DAY MEETING EXPERIENCE", img: "https://i.imgur.com/SDnmGz9.jpeg", desc: "Untuk pertemuan hingga 8 jam. Dua sesi coffee break, sajian makan siang, dan amenities yang disiapkan seamless." },
+  { id: 'fullboard', title: "FULLBOARD MEETING EXPERIENCE", img: "https://i.imgur.com/OLQ6ZLg.jpeg", desc: "Untuk pertemuan intensif hingga 12 jam. Tiga sesi coffee break, sajian makan lengkap, dan elemen acara pendukung." }
+];
+
+// Data Baru: Detail Lengkap Paket Meeting
+const detailedMeetingPackages = [
+  {
+    id: 'halfday',
+    title: "HALF DAY MEETING",
+    price: "Rp 350.000",
+    unit: "/ PAX",
+    includes: [
+      "Usage of Meeting Room for 4 hours",
+      "1x Coffee Break (2 snack items)",
+      "1x Buffet Lunch or Dinner",
+      "Notepads, pens, mints & mineral water for participants",
+      "Flipchart & standard meeting amenities",
+      "Standard sound system & microphones",
+      "LCD Projector (5000 Lumens) & Screen",
+      "High-speed Wi-Fi access",
+      "Includes 1x Attraction Ticket",
+      "Inclusive of Tax & Service Charge"
+    ]
+  },
+  {
+    id: 'fullday',
+    title: "FULL DAY MEETING",
+    price: "Rp 550.000",
+    unit: "/ PAX",
+    includes: [
+      "Usage of Meeting Room for 8 hours",
+      "2x Coffee Breaks (2 snack items)",
+      "1x Buffet Lunch",
+      "Notepads, pens, mints & mineral water for participants",
+      "Flipchart & standard meeting amenities",
+      "Standard sound system & microphones",
+      "LCD Projector (5000 Lumens) & Screen",
+      "Includes Drini Park Entrance Ticket",
+      "Includes 1x Attraction Ticket",
+      "Inclusive of Tax & Service Charge"
+    ]
+  },
+  {
+    id: 'fullboard',
+    title: "FULLBOARD MEETING",
+    price: "Rp 750.000",
+    unit: "/ PAX",
+    includes: [
+      "Usage of Function Room for 12 hours",
+      "3x Coffee Breaks, 1x Lunch, 1x Dinner",
+      "LCD Projector & Screen",
+      "Standard Sound System with Microphones",
+      "Standing Flipchart & Markers | Direction Signs",
+      "Notepads, pens, candies & mineral water",
+      "Receptionist Desk Setup",
+      "Standard Table & Chair Arrangements",
+      "Includes Drini Park Entrance Ticket",
+      "Includes 1x Attraction Ticket",
+      "Inclusive of Tax & Service Charge"
+    ]
+  }
+];
+
+// Data Global Gallery dari User
+const categories = ["All", "Rooms", "Meeting Room", "Experiences", "Aerial Photos", "Others"];
+const galleryItems = [
+  // === ROOMS ===
+  { id: 1, category: "Rooms", image: "https://i.imgur.com/KWyQzpt.jpeg" },
+  { id: 2, category: "Rooms", image: "https://i.imgur.com/fJbsbLh.jpeg" },
+  { id: 3, category: "Rooms", image: "https://i.imgur.com/HGXuSix.jpeg" },
+  { id: 4, category: "Rooms", image: "https://i.imgur.com/Z1Xp37r.jpeg" },
+  { id: 5, category: "Rooms", image: "https://i.imgur.com/PLPVZF3.jpeg" },
+  { id: 6, category: "Rooms", image: "https://i.imgur.com/jjaZAFD.jpeg" },
+  { id: 7, category: "Rooms", image: "https://i.imgur.com/e25gINs.jpeg" },
+  { id: 8, category: "Rooms", image: "https://i.imgur.com/2aYxXpg.jpeg" },
+  { id: 9, category: "Rooms", image: "https://i.imgur.com/ZVOMFGE.jpeg" },
+  { id: 10, category: "Rooms", image: "https://i.imgur.com/Fz7a2kd.jpeg" },
+  { id: 11, category: "Rooms", image: "https://i.imgur.com/mcfcWab.jpeg" },
+  { id: 12, category: "Rooms", image: "https://i.imgur.com/EL8DRXn.jpeg" },
+  { id: 13, category: "Rooms", image: "https://i.imgur.com/BtZvBlx.jpeg" },
+  { id: 14, category: "Rooms", image: "https://i.imgur.com/ZoCw0Cg.jpeg" },
+  { id: 15, category: "Rooms", image: "https://i.imgur.com/1xr7sDC.jpeg" },
+  { id: 16, category: "Rooms", image: "https://i.imgur.com/leiEj38.jpeg" },
+  { id: 17, category: "Rooms", image: "https://i.imgur.com/gKtlTYI.jpeg" },
+  { id: 18, category: "Rooms", image: "https://i.imgur.com/aK9uH7A.jpeg" },
+  { id: 19, category: "Rooms", image: "https://i.imgur.com/Rf8Li6E.jpeg" },
+  { id: 20, category: "Rooms", image: "https://i.imgur.com/mk1v0Cw.jpeg" },
+  { id: 21, category: "Rooms", image: "https://i.imgur.com/fOGdyXq.jpeg" },
+  { id: 22, category: "Rooms", image: "https://i.imgur.com/hTyUQEg.jpeg" },
+  { id: 23, category: "Rooms", image: "https://i.imgur.com/mLrUBq3.jpeg" },
+  { id: 24, category: "Rooms", image: "https://i.imgur.com/uoCBAnj.jpeg" },
+  { id: 25, category: "Rooms", image: "https://i.imgur.com/jIJ60Ru.jpeg" },
+  { id: 26, category: "Rooms", image: "https://i.imgur.com/mvQGKfQ.jpeg" },
+
+  // === EXPERIENCES ===
+  { id: 27, category: "Experiences", image: "https://i.imgur.com/EcX09Cn.jpeg" },
+  { id: 28, category: "Experiences", image: "https://i.imgur.com/AmVVv3T.jpeg" },
+  { id: 29, category: "Experiences", image: "https://i.imgur.com/rGT5e2m.jpeg" },
+  { id: 30, category: "Experiences", image: "https://i.imgur.com/VYv1wfV.jpeg" },
+  { id: 31, category: "Experiences", image: "https://i.imgur.com/rnabH61.jpeg" },
+  { id: 32, category: "Experiences", image: "https://i.imgur.com/mCul9s9.jpeg" },
+  { id: 33, category: "Experiences", image: "https://i.imgur.com/a7cLtWK.jpeg" },
+  { id: 34, category: "Experiences", image: "https://i.imgur.com/M5VORW0.jpeg" },
+  { id: 35, category: "Experiences", image: "https://i.imgur.com/aXWDnyn.jpeg" },
+  { id: 36, category: "Experiences", image: "https://i.imgur.com/OGrQkPq.jpeg" },
+  { id: 37, category: "Experiences", image: "https://i.imgur.com/0CGN3aR.jpeg" },
+  { id: 38, category: "Experiences", image: "https://i.imgur.com/LkIOU7M.jpeg" },
+  { id: 39, category: "Experiences", image: "https://i.imgur.com/RkpBLvH.jpeg" },
+  { id: 40, category: "Experiences", image: "https://i.imgur.com/Xw2VgX0.jpeg" },
+  { id: 41, category: "Experiences", image: "https://i.imgur.com/uS4jQUq.jpeg" },
+  { id: 42, category: "Experiences", image: "https://i.imgur.com/FXjvnZ3.jpeg" },
+  { id: 43, category: "Experiences", image: "https://i.imgur.com/QBmn9RB.jpeg" },
+  { id: 44, category: "Experiences", image: "https://i.imgur.com/8Awk8yA.jpeg" },
+  { id: 45, category: "Experiences", image: "https://i.imgur.com/iJzmVRx.jpeg" },
+  { id: 46, category: "Experiences", image: "https://i.imgur.com/mk4Wj8S.jpeg" },
+  { id: 47, category: "Experiences", image: "https://i.imgur.com/rIcpl5J.jpeg" },
+  { id: 48, category: "Experiences", image: "https://i.imgur.com/HQEAZbj.jpeg" },
+  { id: 49, category: "Experiences", image: "https://i.imgur.com/IO9E8ig.jpeg" },
+  { id: 50, category: "Experiences", image: "https://i.imgur.com/rjHNcP7.jpeg" },
+  { id: 51, category: "Experiences", image: "https://i.imgur.com/fPTramt.jpeg" },
+  { id: 52, category: "Experiences", image: "https://i.imgur.com/loT889x.jpeg" },
+  { id: 53, category: "Experiences", image: "https://i.imgur.com/uSSmjwn.jpeg" },
+  { id: 54, category: "Experiences", image: "https://i.imgur.com/kl7F1FU.jpeg" },
+  { id: 55, category: "Experiences", image: "https://i.imgur.com/oIsaVmM.jpeg" },
+  { id: 56, category: "Experiences", image: "https://i.imgur.com/T3nWuWg.jpeg" },
+  { id: 57, category: "Experiences", image: "https://i.imgur.com/yu9OoZU.jpeg" },
+  { id: 58, category: "Experiences", image: "https://i.imgur.com/xaNSDq8.jpeg" },
+  { id: 59, category: "Experiences", image: "https://i.imgur.com/hbfyoXs.jpeg" },
+  { id: 60, category: "Experiences", image: "https://i.imgur.com/V8pP5Fx.jpeg" },
+  { id: 61, category: "Experiences", image: "https://i.imgur.com/NjQ5z2G.jpeg" },
+  { id: 62, category: "Experiences", image: "https://i.imgur.com/3BIr8HG.jpeg" },
+  { id: 63, category: "Experiences", image: "https://i.imgur.com/m48ycL8.jpeg" },
+  { id: 64, category: "Experiences", image: "https://i.imgur.com/DNz1xNG.jpeg" },
+  { id: 65, category: "Experiences", image: "https://i.imgur.com/akbGXSM.jpeg" },
+  { id: 66, category: "Experiences", image: "https://i.imgur.com/7w2Ni2P.jpeg" },
+  { id: 67, category: "Experiences", image: "https://i.imgur.com/XxxONNo.jpeg" },
+  { id: 68, category: "Experiences", image: "https://i.imgur.com/sFN6tgH.jpeg" },
+  { id: 69, category: "Experiences", image: "https://i.imgur.com/UjahRnQ.jpeg" },
+  { id: 70, category: "Experiences", image: "https://i.imgur.com/IzF1IxP.jpeg" },
+  { id: 71, category: "Experiences", image: "https://i.imgur.com/ONO4gXP.jpeg" },
+  { id: 72, category: "Experiences", image: "https://i.imgur.com/lAmWvVk.jpeg" },
+  { id: 73, category: "Experiences", image: "https://i.imgur.com/9vVKDgJ.jpeg" },
+  { id: 74, category: "Experiences", image: "https://i.imgur.com/D3bwdlv.jpeg" },
+  { id: 75, category: "Experiences", image: "https://i.imgur.com/fk8QzGT.jpeg" },
+  { id: 76, category: "Experiences", image: "https://i.imgur.com/UXpRPzY.jpeg" },
+  { id: 77, category: "Experiences", image: "https://i.imgur.com/N1u7ftQ.jpeg" },
+  { id: 78, category: "Experiences", image: "https://i.imgur.com/ZBJEgJT.jpeg" },
+  { id: 79, category: "Experiences", image: "https://i.imgur.com/z5v8spE.jpeg" },
+
+  // === MEETING ROOM ===
+  { id: 80, category: "Meeting Room", image: "https://i.imgur.com/8gIQqtQ.jpeg" },
+  { id: 81, category: "Meeting Room", image: "https://i.imgur.com/TSg9VVM.jpeg" },
+  { id: 82, category: "Meeting Room", image: "https://i.imgur.com/im2Sef5.jpeg" },
+  { id: 83, category: "Meeting Room", image: "https://i.imgur.com/gPd8pkg.jpeg" },
+  { id: 84, category: "Meeting Room", image: "https://i.imgur.com/5PPadbJ.jpeg" },
+  { id: 85, category: "Meeting Room", image: "https://i.imgur.com/rveW3Cj.jpeg" },
+  { id: 86, category: "Meeting Room", image: "https://i.imgur.com/WUq6AWe.jpeg" },
+
+  // === OTHERS ===
+  { id: 87, category: "Others", image: "https://i.imgur.com/BszsjcD.jpeg" },
+  { id: 88, category: "Others", image: "https://i.imgur.com/kzpoJvl.jpeg" },
+  { id: 89, category: "Others", image: "https://i.imgur.com/qP56GLP.jpeg" },
+  { id: 90, category: "Others", image: "https://i.imgur.com/6pe2I3O.jpeg" },
+  { id: 91, category: "Others", image: "https://i.imgur.com/dNYmLLr.jpeg" },
+  { id: 92, category: "Others", image: "https://i.imgur.com/6pR7MIx.jpeg" },
+  { id: 93, category: "Others", image: "https://i.imgur.com/xsTeks5.jpeg" },
+  { id: 94, category: "Others", image: "https://i.imgur.com/2CMvjTi.jpeg" },
+  { id: 95, category: "Others", image: "https://i.imgur.com/BY4gc8A.jpeg" },
+  { id: 96, category: "Others", image: "https://i.imgur.com/tLNT9yh.jpeg" },
+  { id: 97, category: "Others", image: "https://i.imgur.com/uePPel1.jpeg" },
+  { id: 98, category: "Others", image: "https://i.imgur.com/qaicu1L.jpeg" },
+
+  // === AERIAL PHOTOS ===
+  { id: 99, category: "Aerial Photos", image: "https://i.imgur.com/SH5GRiO.jpeg" },
+  { id: 100, category: "Aerial Photos", image: "https://i.imgur.com/TU7gxzT.jpeg" },
+  { id: 101, category: "Aerial Photos", image: "https://i.imgur.com/TkU4iWD.jpeg" },
+  { id: 102, category: "Aerial Photos", image: "https://i.imgur.com/33rcJSZ.jpeg" },
+  { id: 103, category: "Aerial Photos", image: "https://i.imgur.com/A8WBdRk.jpeg" },
+  { id: 104, category: "Aerial Photos", image: "https://i.imgur.com/tXvNv4T.jpeg" },
+  { id: 105, category: "Aerial Photos", image: "https://i.imgur.com/NVIu8FG.jpeg" },
+  { id: 106, category: "Aerial Photos", image: "https://i.imgur.com/aFb0Geo.jpeg" },
+  { id: 107, category: "Aerial Photos", image: "https://i.imgur.com/7r9Qzyq.jpeg" },
+  { id: 108, category: "Aerial Photos", image: "https://i.imgur.com/Q3qCyJP.jpeg" }
+];
+
+// Data Subset Khusus untuk Home Page Carousel
+const homeGalleryItems = [
+  galleryItems.find(i => i.id === 1),    // 1. Room
+  galleryItems.find(i => i.id === 80),   // 2. Meeting Room
+  galleryItems.find(i => i.id === 27),   // 3. Experience
+  galleryItems.find(i => i.id === 99),   // 4. Aerial Photos
+  galleryItems.find(i => i.id === 87),   // 5. Others
+  galleryItems.find(i => i.id === 2),    // 6. Rooms
+  galleryItems.find(i => i.id === 81),   // 7. Meeting Room
+  galleryItems.find(i => i.id === 28),   // 8. Experience
+  galleryItems.find(i => i.id === 100),  // 9. Aerial Photos
+  galleryItems.find(i => i.id === 88),   // 10. Others
+].filter(Boolean);
+
+// === APP COMPONENT ===
+export default function App() {
+  useLenis(); // Aktivasi Lenis Native Fallback Global Smooth Scroll
+
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [navbarVisible, setNavbarVisible] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [floatingBarVisible, setFloatingBarVisible] = useState(false);
+  const [activePage, setActivePage] = useState('home');
+  
+  const [selectedPackageId, setSelectedPackageId] = useState(null);
+  const [aboutImageIndex, setAboutImageIndex] = useState(0);
+
+  // Gallery state
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [selectedGalleryItem, setSelectedGalleryItem] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(24);
+
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const mapRef = useRef(null);
+
+  const [showGuestPopup, setShowGuestPopup] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState({ rooms: 1, adults: 2, children: 1 });
+  const [showRequestPopup, setShowRequestPopup] = useState(false);
+  const [showRoomTypePopup, setShowRoomTypePopup] = useState(false);
+  const [selectedRoomType, setSelectedRoomType] = useState("");
+  const [selectedRequests, setSelectedRequests] = useState([]);
+  const [otherRequestText, setOtherRequestText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [waNumber, setWaNumber] = useState("");
+  const [name, setName] = useState("");
+  const [checkInDate, setCheckInDate] = useState("");
+  const [checkOutDate, setCheckOutDate] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+
+  const guestPopupRef = useRef(null);
+  const requestPopupRef = useRef(null);
+  const roomTypePopupRef = useRef(null);
+  const lastScrollY = useRef(0);
+  const scrollTimeoutRef = useRef(null);
+  const isFabHoveredRef = useRef(false);
+
+  const todayDate = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(""), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  useEffect(() => {
+    [
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' }
+    ].forEach(attrs => {
+      const link = document.createElement('link');
+      Object.assign(link, attrs);
+      document.head.appendChild(link);
+    });
+
+    const fontLink = document.createElement('link');
+    fontLink.rel = 'stylesheet';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400&display=optional';
+    document.head.appendChild(fontLink);
+    
+    // Inject Splide CSS to bypass React bundler issues
+    const splideCSS = document.createElement('link');
+    splideCSS.rel = 'stylesheet';
+    splideCSS.href = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css';
+    document.head.appendChild(splideCSS);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setMapLoaded(true); },
+      { rootMargin: '200px', threshold: 0.1 }
+    );
+    if (mapRef.current) observer.observe(mapRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const nextIdx = (aboutImageIndex + 1) % aboutImages.length;
+    const img = new Image();
+    img.src = aboutImages[nextIdx];
+  }, [aboutImageIndex]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (guestPopupRef.current && !guestPopupRef.current.contains(event.target)) setShowGuestPopup(false);
+      if (requestPopupRef.current && !requestPopupRef.current.contains(event.target)) setShowRequestPopup(false);
+      if (roomTypePopupRef.current && !roomTypePopupRef.current.contains(event.target)) setShowRoomTypePopup(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          setIsScrolled(currentScrollY > 50);
+
+          // Logika Hide/Show Navbar dengan Threshold (Pencegah Blink)
+          if (currentScrollY <= 150) {
+            setNavbarVisible(true);
+          } else {
+            const delta = currentScrollY - lastScrollY.current;
+            if (delta > 8) { // User scroll turun lebih dari 8px
+              setNavbarVisible(false);
+            } else if (delta < -8) { // User scroll naik lebih dari 8px
+              setNavbarVisible(true);
+            }
+          }
+
+          const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+          const isValidRange = currentScrollY > 400 && currentScrollY < maxScroll - 150;
+
+          if (isValidRange) setFloatingBarVisible(true);
+          else setFloatingBarVisible(false);
+
+          if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+          scrollTimeoutRef.current = setTimeout(() => {
+            if (!isFabHoveredRef.current) setFloatingBarVisible(false);
+          }, 2500);
+
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
+
+  // Reset pagination saat mengganti kategori
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [activeCategory]);
+
+  const scrollToBooking = (e) => {
+    if (e) e.preventDefault();
+    const targetAction = () => {
+      const el = document.getElementById('booking-widget-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    if (activePage !== 'home') {
+      setActivePage('home');
+      setTimeout(targetAction, 100);
+    } else {
+      targetAction();
+    }
+    setMenuOpen(false);
+  };
+
+  const handleNavClick = (item, e) => {
+    if (e) e.preventDefault();
+    
+    if (item === 'Meetings') {
+      setActivePage('meetings');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setMenuOpen(false);
+      return;
+    }
+
+    // Pastikan kita berada di beranda terlebih dahulu untuk menu lainnya
+    setActivePage('home');
+    
+    let targetId = 'home';
+    if (item === 'Rooms') targetId = 'rooms';
+    else if (item === 'Gallery') targetId = 'home-gallery';
+    else if (item === 'Signature Experiences') targetId = 'package';
+
+    // Beri jeda 100ms agar DOM Beranda selesai di-render jika sebelumnya berada di halaman detail
+    setTimeout(() => {
+      if (targetId === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const el = document.getElementById(targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    
+    setMenuOpen(false);
+  };
+
+  const openPackageDetail = (pkgId) => {
+    setSelectedPackageId(pkgId);
+    setActivePage('package-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const updateBooking = (field, delta) => {
+    setBookingDetails(prev => {
+      const newValue = prev[field] + delta;
+      if (field === 'rooms' && (newValue < 1 || newValue > 5)) return prev;
+      if (field === 'adults' && (newValue < 1 || newValue > 20)) return prev;
+      if (field === 'children' && (newValue < 0 || newValue > 10)) return prev;
+      return { ...prev, [field]: newValue };
+    });
+  };
+
+  const handleWaChange = (e) => {
+    const value = e.target.value;
+    const numericValue = value.replace(/[^0-9+]/g, '');
+    setWaNumber(numericValue);
+  };
+
+  const toggleRequest = (option) => {
+    setSelectedRequests(prev => prev.includes(option) ? prev.filter(item => item !== option) : [...prev, option]);
+  };
+
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return "Pilih Tanggal";
+    const [y, m, d] = dateStr.split('-');
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    return `${d} ${months[parseInt(m, 10) - 1]} ${y}`;
+  };
+
+  const handleBookNowSubmit = () => {
+    if (!name.trim()) return setToastMessage("Please enter your full name.");
+    if (!waNumber.trim() || waNumber.length < 10) return setToastMessage("Please enter a valid WhatsApp number.");
+    if (!selectedRoomType) return setToastMessage("Please select a room type.");
+    if (!checkInDate) return setToastMessage("Please select a check-in date.");
+    if (!checkOutDate) return setToastMessage("Please select a check-out date.");
+    if (checkOutDate <= checkInDate) return setToastMessage("Check-out date must be after check-in date.");
+
+    const targetNumber = "6281325553007";
+    let requestStr = selectedRequests.join(", ");
+    if (selectedRequests.includes("Other") && otherRequestText.trim() !== "") {
+       requestStr = requestStr.replace("Other", `Other (${otherRequestText})`);
+    }
+    if (requestStr === "") requestStr = "-";
+
+    const totalGuests = `${bookingDetails.rooms} Kamar, ${bookingDetails.adults} Dewasa, ${bookingDetails.children} Anak`;
+    const message = `Halo Tim Reservasi Drini Park Resort, saya ingin melakukan reservasi dengan detail berikut:\n\nNama Lengkap: ${name || "-"}\nWhatsApp Number: ${waNumber || "-"}\nRoom Type: ${selectedRoomType || "-"}\nRequest: ${requestStr}\nCheck In: ${formatDisplayDate(checkInDate)}\nCheck Out: ${formatDisplayDate(checkOutDate)}\nJumlah tamu: ${totalGuests}\n\nMohon info ketersediaannya. Terima kasih!`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const waUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
+    
+    setIsSubmitting(true);
+    window.open(waUrl, '_blank');
+    setTimeout(() => setIsSubmitting(false), 2000);
+  };
+
+  const handleGeneralInquiry = (packageName) => {
+    const targetNumber = "6281325553007";
+    const message = `Halo Tim Reservasi Drini Park Resort, saya ingin menanyakan informasi lebih lanjut mengenai: *${packageName}*.`;
+    const encodedMessage = encodeURIComponent(message);
+    const waUrl = `https://wa.me/${targetNumber}?text=${encodedMessage}`;
+    window.open(waUrl, '_blank');
+  };
+
+  // Gallery Logics
+  const filteredGallery = activeCategory === "All" 
+    ? galleryItems 
+    : galleryItems.filter((item) => item.category === activeCategory);
+    
+  const currentGalleryIndex = filteredGallery.findIndex((i) => i.id === selectedGalleryItem?.id);
+  
+  const handleGalleryPrev = () => { 
+    const prevIndex = (currentGalleryIndex - 1 + filteredGallery.length) % filteredGallery.length; 
+    setSelectedGalleryItem(filteredGallery[prevIndex]); 
+  };
+  
+  const handleGalleryNext = () => { 
+    const nextIndex = (currentGalleryIndex + 1) % filteredGallery.length; 
+    setSelectedGalleryItem(filteredGallery[nextIndex]); 
+  };
+
+  const isNavSolid = isScrolled || !['home', 'gallery'].includes(activePage);
+
+  return (
+    <div className="min-h-screen bg-neutral-50 font-sans text-neutral-800 scroll-smooth overflow-x-hidden">
+      
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div className="fixed top-6 md:top-10 left-1/2 -translate-x-1/2 z-[300] bg-[#1c1c1c]/95 backdrop-blur-md text-[#D4AF37] px-6 py-4 rounded-[8px] md:rounded-full shadow-2xl flex items-center gap-6 animate-in slide-in-from-top-4 border border-[#D4AF37]/30">
+          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest leading-snug whitespace-nowrap">{toastMessage}</span>
+          <button onClick={() => setToastMessage("")} className="hover:text-white transition-colors touch-action-manipulation p-1"><X size={16}/></button>
+        </div>
+      )}
+
+      {/* GLOBAL STYLES WITH ANIMATION FALLBACK, MOBILE OVERSCROLL FIX, & SPLIDE CSS */}
+      <style dangerouslySetInnerHTML={{__html: `
+        /* === LENIS SMOOTH SCROLL CORE CSS === */
+        html.lenis, html.lenis body {
+          height: auto;
+        }
+        .lenis.lenis-smooth {
+          scroll-behavior: auto !important;
+        }
+        .lenis.lenis-smooth [data-lenis-prevent] {
+          overscroll-behavior: contain;
+        }
+        .lenis.lenis-stopped {
+          overflow: hidden;
+        }
+        .lenis.lenis-smooth iframe {
+          pointer-events: none;
+        }
+
+        body { 
+          overflow-x: hidden; 
+        }
+
+        * { -webkit-font-smoothing: antialiased; }
+        .font-serif { font-family: 'Cinzel', serif !important; }
+        .font-quote { font-family: 'Playfair Display', serif !important; }
+        .font-sans { font-family: 'Inter', sans-serif !important; }
+        ::selection { background-color: #D4AF37; color: black; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #D4AF37; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .touch-action-manipulation { touch-action: manipulation; }
+        .focus-ring:focus-visible { outline: 2px solid #D4AF37; outline-offset: 2px; }
+        
+        /* Fallback Animations for animate-in */
+        @keyframes fadeInNative { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInTopNative { from { opacity: 0; transform: translate(-50%, -1rem); } to { opacity: 1; transform: translate(-50%, 0); } }
+        .animate-in.fade-in { animation: fadeInNative 0.3s ease-out forwards; }
+        .animate-in.slide-in-from-top-4 { animation: slideInTopNative 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* === SPLIDE CAROUSEL CUSTOM STYLES === */
+        .splide__slide .slide-card {
+          transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+          transform: scale(0.85);
+          opacity: 0.5;
+          cursor: grab;
+          height: 480px;
+          border-radius: 16px;
+        }
+        @media (max-width: 768px) {
+          .splide__slide .slide-card {
+            height: 400px;
+            border-radius: 8px;
+          }
+        }
+        .splide__slide.is-center .slide-card {
+          transform: scale(1);
+          opacity: 1;
+          outline: 2px solid rgba(212,175,55,0.4);
+          outline-offset: 4px;
+          cursor: pointer;
+        }
+        .splide__slide.is-prev .slide-card,
+        .splide__slide.is-next .slide-card {
+          transform: scale(0.9);
+          opacity: 0.7;
+          cursor: grab;
+        }
+        .splide__slide.is-center .slide-card:active,
+        .splide__slide.is-prev .slide-card:active,
+        .splide__slide.is-next .slide-card:active {
+          cursor: grabbing;
+        }
+        .splide__slide:not(.is-center) .slide-desc {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        .splide__slide.is-center .slide-desc {
+          opacity: 1;
+          transform: translateY(0);
+          transition: all 0.6s ease 0.2s;
+        }
+        
+        /* Override Splide Pagination */
+        .splide__pagination {
+          bottom: -2rem;
+        }
+        .splide__pagination__page {
+          background: #ccc;
+          height: 4px;
+          width: 16px;
+          border-radius: 4px;
+          margin: 0 4px;
+          transition: all 0.3s ease;
+          opacity: 1;
+        }
+        .splide__pagination__page.is-active {
+          background: #D4AF37;
+          width: 32px;
+          transform: scale(1);
+        }
+      `}} />
+      
+      {/* NAVIGATION BAR */}
+      <nav className={`fixed w-full z-[150] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${isNavSolid ? 'bg-white/95 backdrop-blur-sm shadow-sm border-b border-neutral-100 py-3 md:py-4' : 'bg-transparent py-5 md:py-6'} ${navbarVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <a href="#home" onClick={(e) => handleNavClick('Home', e)} className="flex-shrink-0 transition-opacity hover:opacity-80 touch-action-manipulation focus-ring min-h-[48px] min-w-[48px] flex items-center">
+              <img src={isNavSolid ? "https://i.imgur.com/yjAEuPv.png" : "https://i.imgur.com/MqnPJrm.png"} alt="Drini Park Resort" width="120" height="64" className="h-10 md:h-[50px] w-auto object-contain transition-all duration-500" />
+            </a>
+            <div className="flex items-center space-x-4 md:space-x-8">
+              <button aria-label="Toggle Navigation Menu" onClick={() => setMenuOpen(!menuOpen)} className={`min-w-[48px] min-h-[48px] flex items-center justify-center group transition-transform duration-100 active:scale-[0.97] touch-action-manipulation focus-ring ${isNavSolid ? 'text-neutral-800' : 'text-white'}`}>
+                <div className="flex flex-col items-stretch gap-1.5">
+                  <span className="text-[9px] font-bold tracking-[0.2em] uppercase group-hover:text-[#D4AF37] transition-colors duration-200 text-center pl-[0.2em]">Menu</span>
+                  <div className="flex flex-col gap-2 w-full mt-0.5">
+                    <span className={`h-[2px] w-full bg-current transition-colors duration-200 group-hover:bg-[#D4AF37]`}></span>
+                    <span className={`h-[2px] w-full bg-current transition-colors duration-200 group-hover:bg-[#D4AF37]`}></span>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* FLOATING MENU OVERLAY */}
+      <div className={`fixed inset-0 z-[200] transition-opacity duration-300 ease-in-out ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)}></div>
+        <div className={`absolute bottom-0 w-full rounded-t-[24px] pb-[calc(2rem+env(safe-area-inset-bottom))] md:bottom-auto md:top-6 md:right-6 md:w-full md:max-w-[320px] bg-[#f2f2f2] md:rounded-[2.5rem] p-8 md:p-10 md:pb-16 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${menuOpen ? 'translate-y-0 md:translate-y-0 md:translate-x-0 scale-100' : 'translate-y-full md:translate-y-[-20px] md:translate-x-[20px] md:scale-95'}`}>
+          <div className="flex justify-between items-center mb-10 md:mb-12">
+            <span className="text-[10px] font-bold tracking-[0.4em] text-neutral-400 uppercase">Menu</span>
+            <button aria-label="Close Menu" onClick={() => setMenuOpen(false)} className="text-neutral-800 hover:text-[#D4AF37] transition-colors duration-200 min-w-[48px] min-h-[48px] flex items-center justify-end touch-action-manipulation active:scale-95 focus-ring"><X size={24} strokeWidth={2.5} /></button>
+          </div>
+          <div className="flex flex-col space-y-6">
+            {navItems.map((item) => {
+              const isHomeDot = activePage === 'home' && item === 'Home';
+              return (
+                <a key={item} href={`#`} onClick={(e) => handleNavClick(item, e)} className="group flex items-center justify-between min-h-[48px] touch-action-manipulation focus-ring">
+                  <span className={`text-[17px] font-medium tracking-tight transition-[padding,color] duration-200 group-hover:pl-2 ${isHomeDot ? 'text-neutral-800' : 'text-neutral-500 group-hover:text-neutral-800'}`}>
+                    {item}
+                  </span>
+                  {isHomeDot && <div className="w-1.5 h-1.5 bg-neutral-400 rounded-full"></div>}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* PAGE CONTENT */}
+      {activePage === 'home' && (
+        <main>
+          
+          <div className="relative w-full flex flex-col">
+            {/* HERO SECTION */}
+            <section id="home" className="relative h-[90dvh] md:h-[100dvh] flex items-center justify-center overflow-hidden bg-neutral-900">
+              <div className="absolute inset-0 w-full h-full overflow-hidden">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0 w-full h-full object-cover opacity-90 transition-opacity duration-1000"
+                >
+                  <source src="https://i.imgur.com/aMNrnEs.mp4" type="video/mp4" />
+                </video>
+                <div className="absolute inset-0 bg-neutral-900/40 pointer-events-none"></div>
+              </div>
+              <div className="relative z-10 text-center px-4 mt-[-15vh] text-white">
+                <WordReveal text="The Luxury of Nature" as="h1" className="text-[clamp(1.1rem,4.5vw,3rem)] md:text-5xl font-serif mb-6 md:mb-8 leading-tight drop-shadow-2xl uppercase tracking-[0.1em] justify-center !flex-nowrap whitespace-nowrap" />
+                <ScrollReveal variant="fadeUp" delay={0.4}>
+                  <p className="text-[10px] md:text-sm text-neutral-100 mb-10 font-light tracking-[0.3em] uppercase drop-shadow-lg opacity-90 max-w-2xl mx-auto leading-relaxed px-4">
+                    A discreet coastal sanctuary defined by privacy, design, and refined experiences.
+                  </p>
+                </ScrollReveal>
+              </div>
+            </section>
+
+            {/* BOOKING WIDGET */}
+            <div id="booking-widget-section" className="relative md:absolute w-full px-4 z-[100] md:bottom-0 md:left-0 md:translate-y-1/2 -mt-12 md:mt-0 pb-12 md:pb-0">
+              <div className="max-w-6xl mx-auto bg-white/95 backdrop-blur-md rounded-[16px] md:rounded-sm shadow-[0_20px_70px_-10px_rgba(0,0,0,0.12)] p-6 md:p-14 border border-white/40 relative">
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-8 mb-6 md:mb-12">
+                   <div className="flex flex-col relative">
+                      <input 
+                        type="text" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full p-4 md:p-3 border-b border-neutral-200 rounded-none focus:outline-none focus:border-[#D4AF37] transition-colors duration-200 bg-transparent text-[16px] md:text-[11px] font-light uppercase tracking-[0.2em] md:tracking-[0.4em] placeholder:text-neutral-500 touch-action-manipulation" 
+                        placeholder="Full Name" 
+                      />
+                   </div>
+                   <div className="flex flex-col relative">
+                      <input 
+                        type="text" 
+                        inputMode="tel"
+                        value={waNumber}
+                        onChange={handleWaChange}
+                        className="w-full p-4 md:p-3 border-b border-neutral-200 rounded-none focus:outline-none focus:border-[#D4AF37] transition-colors duration-200 bg-transparent text-[16px] md:text-[11px] font-light uppercase tracking-[0.2em] md:tracking-[0.4em] placeholder:text-neutral-500 touch-action-manipulation" 
+                        placeholder="WhatsApp Number (e.g. 08123...)" 
+                      />
+                   </div>
+                   
+                   <div className="flex flex-col relative" ref={roomTypePopupRef}>
+                      <div 
+                        onClick={() => setShowRoomTypePopup(!showRoomTypePopup)}
+                        className="w-full p-4 md:p-3 border-b border-neutral-200 cursor-pointer flex justify-between items-center hover:bg-neutral-50/30 transition-colors duration-200 min-h-[48px] touch-action-manipulation focus-ring"
+                        tabIndex={0}
+                      >
+                        <span className={`text-[13px] md:text-[11px] font-light uppercase tracking-[0.2em] md:tracking-[0.4em] truncate ${selectedRoomType ? 'text-black font-normal' : 'text-neutral-500'}`}>
+                          {selectedRoomType || "Room Type"}
+                        </span>
+                        <ChevronDown size={16} className={`text-neutral-400 transition-transform duration-300 ${showRoomTypePopup ? 'rotate-180' : ''}`} />
+                      </div>
+                      <div className={`fixed bottom-0 left-0 w-full bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] z-[200] rounded-t-[24px] md:absolute md:top-full md:bottom-auto md:w-full md:shadow-2xl md:border md:border-neutral-100 md:p-2 md:rounded-sm md:mt-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${showRoomTypePopup ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-full md:-translate-y-4 pointer-events-none'}`}>
+                         <div className="flex justify-between items-center mb-4 md:hidden">
+                            <span className="text-[12px] font-bold uppercase tracking-widest">Select Room</span>
+                            <button onClick={() => setShowRoomTypePopup(false)} className="p-2"><X size={20}/></button>
+                         </div>
+                         <div className="flex flex-col max-h-60 overflow-y-auto custom-scrollbar">
+                            {roomTypes.map((type) => (
+                              <div 
+                                key={type} 
+                                onClick={() => {
+                                  setSelectedRoomType(type);
+                                  setShowRoomTypePopup(false);
+                                }}
+                                className={`p-4 md:p-3 text-[12px] md:text-[10px] cursor-pointer hover:bg-neutral-50 transition-colors duration-200 uppercase tracking-[0.2em] font-light touch-action-manipulation ${selectedRoomType === type ? 'text-[#D4AF37] font-bold bg-neutral-50/50' : 'text-neutral-600'}`}
+                              >
+                                {type}
+                              </div>
+                            ))}
+                         </div>
+                      </div>
+                   </div>
+                   
+                   <div className="flex flex-col relative" ref={requestPopupRef}>
+                      <div 
+                        onClick={() => setShowRequestPopup(!showRequestPopup)}
+                        className="w-full p-4 md:p-3 border-b border-neutral-200 cursor-pointer flex justify-between items-center hover:bg-neutral-50/30 transition-colors duration-200 min-h-[48px] touch-action-manipulation focus-ring"
+                        tabIndex={0}
+                      >
+                        <span className="text-[13px] md:text-[11px] font-light text-neutral-500 uppercase tracking-[0.2em] md:tracking-[0.4em] truncate">
+                          {selectedRequests.length === 0 ? "Request" : `${selectedRequests.length} Selected`}
+                        </span>
+                        <ChevronDown size={16} className={`text-neutral-400 transition-transform duration-300 ${showRequestPopup ? 'rotate-180' : ''}`} />
+                      </div>
+                      <div className={`fixed bottom-0 left-0 w-full bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] z-[200] rounded-t-[24px] md:absolute md:top-full md:bottom-auto md:w-80 md:shadow-2xl md:border md:border-neutral-100 md:p-6 md:rounded-sm md:mt-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${showRequestPopup ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-full md:-translate-y-4 pointer-events-none'}`}>
+                         <div className="flex justify-between items-center mb-4 md:hidden">
+                            <span className="text-[12px] font-bold uppercase tracking-widest">Special Requests</span>
+                            <button onClick={() => setShowRequestPopup(false)} className="p-2"><X size={20}/></button>
+                         </div>
+                         <div className="flex flex-col space-y-1 mb-6 max-h-72 overflow-y-auto custom-scrollbar">
+                              {requestOptions.map((opt) => (
+                                <label key={opt} className="flex items-center gap-4 p-3 md:p-2.5 hover:bg-neutral-50 rounded-sm cursor-pointer transition-colors duration-200 group touch-action-manipulation min-h-[44px]">
+                                   <div className={`w-4 h-4 md:w-3.5 md:h-3.5 rounded-full border flex items-center justify-center transition-colors duration-200 ${selectedRequests.includes(opt) ? 'bg-[#D4AF37] border-[#D4AF37]' : 'border-neutral-200'}`}>
+                                      {selectedRequests.includes(opt) && <Check size={12} className="text-white" />}
+                                   </div>
+                                   <input type="checkbox" className="hidden" checked={selectedRequests.includes(opt)} onChange={() => toggleRequest(opt)} />
+                                   <span className={`text-[12px] md:text-[10px] font-light uppercase tracking-[0.2em] ${selectedRequests.includes(opt) ? 'text-black font-normal' : 'text-neutral-400 group-hover:text-neutral-800'}`}>{opt}</span>
+                                </label>
+                              ))}
+                         </div>
+                         {selectedRequests.includes("Other") && (
+                           <textarea 
+                              value={otherRequestText}
+                              onChange={(e) => setOtherRequestText(e.target.value)}
+                              placeholder="Special requests..."
+                              className="w-full p-4 md:p-3 border border-neutral-100 rounded-sm text-[16px] md:text-[10px] focus:outline-none focus:border-[#D4AF37] h-20 resize-none animate-in fade-in bg-neutral-50/50 mb-4 touch-action-manipulation"
+                           />
+                         )}
+                         <button onClick={() => setShowRequestPopup(false)} className="w-full min-h-[48px] py-4 md:py-3 bg-black text-[#D4AF37] text-[12px] md:text-[10px] font-bold uppercase tracking-[0.4em] active:scale-95 transition-transform duration-100 touch-action-manipulation rounded-[8px] md:rounded-none">Confirm</button>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-10 items-end">
+                  <div className="flex flex-col group cursor-pointer relative overflow-hidden min-h-[48px] active:scale-[0.98] transition-transform duration-200">
+                    <input 
+                      type="date" 
+                      value={checkInDate}
+                      min={todayDate}
+                      onChange={(e) => {
+                        setCheckInDate(e.target.value);
+                        if (checkOutDate && e.target.value >= checkOutDate) {
+                          setCheckOutDate("");
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer touch-action-manipulation" 
+                    />
+                    <div className="flex items-center pb-4 border-b border-neutral-100 group-hover:border-[#D4AF37] transition-colors duration-200 relative z-10 pointer-events-none w-full">
+                      <Calendar className="text-[#D4AF37]/60 mr-4 shrink-0" size={20} />
+                      <div className="flex flex-col w-full">
+                        <span className="text-[10px] md:text-[8px] font-light text-neutral-400 uppercase tracking-[0.5em] mb-1">Check-in</span>
+                        <span className={`w-full bg-transparent text-[13px] md:text-[11px] font-light tracking-widest uppercase ${checkInDate ? 'text-neutral-800' : 'text-neutral-400'}`}>
+                           {formatDisplayDate(checkInDate)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col group cursor-pointer relative overflow-hidden min-h-[48px] active:scale-[0.98] transition-transform duration-200">
+                    <input 
+                      type="date" 
+                      value={checkOutDate}
+                      min={checkInDate || todayDate}
+                      onChange={(e) => setCheckOutDate(e.target.value)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer touch-action-manipulation" 
+                    />
+                    <div className="flex items-center pb-4 border-b border-neutral-100 group-hover:border-[#D4AF37] transition-colors duration-200 relative z-10 pointer-events-none w-full">
+                      <Calendar className="text-[#D4AF37]/60 mr-4 shrink-0" size={20} />
+                      <div className="flex flex-col w-full">
+                        <span className="text-[10px] md:text-[8px] font-light text-neutral-400 uppercase tracking-[0.5em] mb-1">Check-out</span>
+                        <span className={`w-full bg-transparent text-[13px] md:text-[11px] font-light tracking-widest uppercase ${checkOutDate ? 'text-neutral-800' : 'text-neutral-400'}`}>
+                           {formatDisplayDate(checkOutDate)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col relative" ref={guestPopupRef}>
+                    <div onClick={() => setShowGuestPopup(!showGuestPopup)} className="flex items-center justify-between pb-4 border-b border-neutral-100 group-hover:border-[#D4AF37] transition-colors duration-200 cursor-pointer min-h-[48px] touch-action-manipulation focus-ring" tabIndex={0}>
+                      <div className="flex items-center">
+                        <Users className="text-[#D4AF37]/60 mr-4 shrink-0" size={20} />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] md:text-[8px] font-light text-neutral-400 uppercase tracking-[0.5em] mb-1">Guests</span>
+                          <span className="text-[13px] md:text-[11px] font-light text-neutral-800 uppercase tracking-widest">{bookingDetails.rooms} RMS, {bookingDetails.adults} ADT</span>
+                        </div>
+                      </div>
+                      <ChevronDown size={16} className={`text-neutral-300 transition-transform duration-300 ${showGuestPopup ? 'rotate-180 text-[#D4AF37]' : ''}`} />
+                    </div>
+                    <div className={`fixed bottom-0 left-0 w-full bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] z-[200] rounded-t-[24px] md:absolute md:top-full md:bottom-auto md:w-80 md:shadow-2xl md:border md:border-neutral-50 md:p-7 md:rounded-sm md:mt-4 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${showGuestPopup ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-full md:-translate-y-4 pointer-events-none'}`}>
+                         <div className="flex justify-between items-center mb-6 md:hidden">
+                            <span className="text-[12px] font-bold uppercase tracking-widest">Select Guests</span>
+                            <button onClick={() => setShowGuestPopup(false)} className="p-2"><X size={20}/></button>
+                         </div>
+                         {[ { id: 'rooms', label: 'Rooms' }, { id: 'adults', label: 'Adults' }, { id: 'children', label: 'Children' } ].map((item) => (
+                          <div key={item.id} className="flex items-center justify-between py-5 md:py-4 border-b border-neutral-50 last:border-0 min-h-[48px]">
+                            <span className="text-[11px] md:text-[9px] font-light uppercase tracking-[0.4em] text-neutral-500">{item.label}</span>
+                            <div className="flex items-center space-x-6 md:space-x-5">
+                              <button aria-label={`Decrease ${item.label}`} onClick={() => updateBooking(item.id, -1)} className="w-10 h-10 md:w-7 md:h-7 rounded-full border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 text-neutral-500 touch-action-manipulation active:scale-95 transition-transform duration-100"><Minus size={14}/></button>
+                              <span className="text-[14px] md:text-[11px] font-normal w-4 text-center">{bookingDetails[item.id]}</span>
+                              <button aria-label={`Increase ${item.label}`} onClick={() => updateBooking(item.id, 1)} className="w-10 h-10 md:w-7 md:h-7 rounded-full border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 text-neutral-500 touch-action-manipulation active:scale-95 transition-transform duration-100"><Plus size={14}/></button>
+                            </div>
+                          </div>
+                         ))}
+                         <button onClick={() => setShowGuestPopup(false)} className="w-full mt-6 md:mt-6 min-h-[56px] md:min-h-[48px] bg-black text-[#D4AF37] text-[12px] md:text-[10px] font-bold uppercase tracking-[0.4em] active:scale-95 transition-transform duration-100 touch-action-manipulation rounded-[8px] md:rounded-none">Apply</button>
+                      </div>
+                  </div>
+                  
+                  <button 
+                    onClick={handleBookNowSubmit} 
+                    disabled={isSubmitting}
+                    className="bg-black text-[#D4AF37] min-h-[56px] md:min-h-auto md:py-6 px-4 rounded-[8px] md:rounded-[1px] font-bold uppercase tracking-[0.3em] md:tracking-[0.5em] text-[12px] md:text-[10px] shadow-lg transition-transform duration-100 active:scale-[0.97] self-stretch touch-action-manipulation w-full focus-ring disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? "Opening WA..." : "Book Now"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ABOUT */}
+          <section id="about" className="pt-24 md:pt-80 pb-20 md:pb-32 px-4 bg-neutral-50 relative z-10">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center">
+              <div>
+                <ScrollReveal variant="slideLeft" duration={1}>
+                  <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 md:mb-6 uppercase italic">Overview</h4>
+                </ScrollReveal>
+                <WordReveal text="The Luxury of Nature" as="h2" delay={0.2} stagger={0.07} className="text-xl md:text-2xl font-serif text-black mb-8 md:mb-10 uppercase tracking-wide leading-snug" />
+                <ScrollReveal variant="blur" delay={0.4} duration={1} className="text-neutral-500 font-light leading-loose space-y-6 text-justify text-sm md:text-base">
+                  <p>Drini Park Resort adalah private coastal luxury retreat yang berdiri tepat di tepi pesisir selatan Yogyakarta — terintegrasi dalam kawasan Pantai Drini, dengan arsitektur contemporary Mediterranean yang membiarkan alam berbicara lebih keras dari dindingnya. Garis bangunan yang bersih, proporsi ruang yang lapang, dan cahaya alami yang mengalir bebas — semua bekerja dalam diam untuk menciptakan satu hal: <strong>"rasa tenang yang sesungguhnya."</strong></p>
+                  <p>Ini bukan sekadar tempat menginap. Ini adalah undangan untuk kembali — ke ritme yang lebih lambat, ke momen yang lebih bermakna, ke versi diri Anda yang tidak tergesa. Seluruh aspek resort dijalankan dengan satu prinsip yang tidak pernah berubah: <strong><em>"Presence Without Intrusion" — Attentive, discreet, and always intentional.</em></strong></p>
+                </ScrollReveal>
+              </div>
+              <ScrollReveal variant="zoomIn" className="relative group overflow-hidden rounded-sm shadow-2xl">
+                <img loading="lazy" decoding="async" src={aboutImages[aboutImageIndex]} width="800" height="600" className="w-full aspect-[4/3] object-cover transition-transform duration-[1500ms] ease-out group-hover:scale-110 will-change-transform" alt="Resort" />
+                <div className="absolute inset-0 flex items-center justify-between px-4 md:px-6 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button aria-label="Previous Image" onClick={() => setAboutImageIndex((p) => (p - 1 + aboutImages.length) % aboutImages.length)} className="bg-black/30 md:bg-white/20 backdrop-blur-sm p-3 rounded-full text-white min-w-[48px] min-h-[48px] flex items-center justify-center touch-action-manipulation active:scale-95 transition-transform duration-100"><ChevronLeft/></button>
+                  <button aria-label="Next Image" onClick={() => setAboutImageIndex((p) => (p + 1) % aboutImages.length)} className="bg-black/30 md:bg-white/20 backdrop-blur-sm p-3 rounded-full text-white min-w-[48px] min-h-[48px] flex items-center justify-center touch-action-manipulation active:scale-95 transition-transform duration-100"><ChevronRight/></button>
+                </div>
+              </ScrollReveal>
+            </div>
+          </section>
+
+          {/* ACCOMMODATION */}
+          <section id="rooms" className="bg-black py-20 md:py-32 overflow-hidden select-none">
+            <div className="max-w-full px-4 lg:px-12">
+              <ScrollReveal variant="fadeUp" className="text-center mb-16 md:mb-24">
+                <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Accommodation Selection</h4>
+                <WordReveal text="Our Private Sanctuaries" as="h2" delay={0.2} stagger={0.05} className="text-2xl md:text-4xl font-serif text-white tracking-wide justify-center" />
+                <div className="h-[1px] w-16 md:w-24 bg-[#D4AF37]/50 mx-auto mt-6 md:mt-8"></div>
+              </ScrollReveal>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 bg-black md:border-y border-white/20 divide-y sm:divide-y-0 sm:divide-x divide-white/20 shadow-2xl w-full">
+                {roomsData.map((room, i) => (
+                  <ScrollReveal variant="fadeUp" delay={i * 0.1} key={i} className="group relative overflow-hidden bg-neutral-900 aspect-[4/5] sm:aspect-[2/3] lg:aspect-auto lg:h-[550px] xl:h-[600px] cursor-pointer touch-action-manipulation" as="div">
+                    <div onClick={() => { setActivePage('rooms'); setTimeout(() => { const targetId = `room-${room.name.toLowerCase().replace(/[\s/]+/g, '-')}`; document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' }); }, 100); }} className="w-full h-full block">
+                      <img draggable="false" loading="lazy" decoding="async" src={room.image} width="600" height="900" className="w-full h-full object-cover transition-transform duration-[1000ms] group-hover:scale-105 select-none will-change-transform" alt={room.name} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 pointer-events-none"></div>
+                      <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end pointer-events-none">
+                        <h3 className="text-white font-serif text-lg lg:text-xl uppercase tracking-widest mb-4 md:transition-transform md:duration-300 md:group-hover:-translate-y-4 will-change-transform max-w-[140px] leading-snug drop-shadow-md">
+                          {room.name}
+                        </h3>
+                        <div className="h-[1px] w-12 bg-[#D4AF37] origin-left md:scale-x-0 md:group-hover:scale-x-100 transition-transform duration-300 will-change-transform"></div>
+                      </div>
+                    </div>
+                  </ScrollReveal>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* PACKAGE PREVIEW (SPLIDE CAROUSEL) */}
+          <section id="package" className="pt-24 pb-12 bg-white">
+            <ScrollReveal variant="fadeUp" className="text-center mb-10 md:mb-16 max-w-7xl mx-auto px-4">
+              <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Curated For You</h4>
+              <WordReveal text="Signature Experiences" as="h2" className="text-2xl md:text-4xl font-serif text-black uppercase tracking-wide justify-center" />
+              <p className="text-neutral-500 mt-6 max-w-2xl mx-auto font-light leading-relaxed text-sm md:text-base">
+                Bukan daftar aktivitas. Ini adalah pilihan — sepenuhnya milik Anda, dijalani dalam ritme yang Anda tentukan sendiri. <em>Intentional in design. Effortless in execution.</em>
+              </p>
+            </ScrollReveal>
+            
+            <ScrollReveal variant="fadeIn" delay={0.2} duration={0.8} className="w-full">
+              <ParallaxCarousel items={allPackages} onOpenDetail={openPackageDetail} />
+            </ScrollReveal>
+          </section>
+
+          {/* CULINARY */}
+          <section id="culinary" className="py-20 md:py-32 bg-white px-4 border-t border-neutral-50">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
+              <ScrollReveal variant="zoomIn" className="grid grid-cols-2 gap-0 overflow-hidden rounded-sm shadow-xl md:shadow-2xl">
+                <img loading="lazy" decoding="async" src="https://i.imgur.com/McUwWFE.jpeg" width="400" height="500" className="w-full h-[350px] md:h-[500px] object-cover transition-transform duration-[1000ms] ease-out md:hover:scale-105 will-change-transform" alt="Culinary Breakfast" />
+                <img loading="lazy" decoding="async" src="https://i.imgur.com/dLfpShJ.jpeg" width="400" height="500" className="w-full h-[350px] md:h-[500px] object-cover transition-transform duration-[1000ms] ease-out md:hover:scale-105 border-l border-white/20 will-change-transform" alt="Culinary Dining" />
+              </ScrollReveal>
+              <div>
+                <ScrollReveal variant="slideRight" delay={0.2}>
+                  <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 md:mb-8 uppercase italic">Gastronomy</h4>
+                  <WordReveal text="Breakfast & Dining" as="h2" delay={0.3} stagger={0.08} className="text-2xl md:text-5xl font-serif text-black mb-8 md:mb-10 uppercase tracking-wide leading-tight" />
+                  <div className="text-neutral-500 font-light leading-loose space-y-6 text-justify text-sm md:text-base">
+                    <p>Hari dimulai dengan aroma kopi dan udara laut pagi yang masuk perlahan — sarapan yang tidak terburu-buru, dalam suasana terbuka yang membiarkan Anda benar-benar hadir di momen itu.</p>
+                    <p>Malam menutup hari dengan cara yang sama bermartabatnya: meja yang disiapkan dengan teliti, menu yang lahir dari bahan pilihan, dan suara ombak dari kejauhan yang mengisi setiap jeda percakapan.</p>
+                    <p>Di Drini Park Resort, makan bukan sekadar kebutuhan. Ia adalah bagian dari experience itu sendiri.</p>
+                  </div>
+                </ScrollReveal>
+              </div>
+            </div>
+          </section>
+
+          {/* MEETING */}
+          <section id="meeting-package" className="py-20 md:py-32 bg-neutral-50 relative select-none">
+            <div className="max-w-full">
+              <ScrollReveal variant="fadeUp" className="text-center mb-16 md:mb-24 max-w-4xl mx-auto px-4">
+                <div>
+                  <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Executive Gatherings</h4>
+                  <WordReveal text="Sky & Sea View Meetings" as="h2" delay={0.2} stagger={0.05} className="text-2xl md:text-5xl font-serif text-black mb-6 md:mb-8 uppercase tracking-wide justify-center" />
+                  
+                  <div>
+                    <p className="font-quote text-lg md:text-2xl italic text-black tracking-wide mb-6">
+                      "Focused. Seamless. Thoughtfully hosted."
+                    </p>
+                    <p className="text-neutral-600 font-light text-sm md:text-lg leading-relaxed max-w-3xl mx-auto">
+                      Bukan sekadar ruang rapat dengan view bagus. Ini adalah environment yang secara sengaja dirancang untuk mendukung fokus, privasi, dan dialog yang terarah — dengan standar hospitality luxury yang tidak pernah menginterupsi jalannya pertemuan Anda.
+                    </p>
+                  </div>
+                </div>
+              </ScrollReveal>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+                {meetingPackages.map((pkg, i) => (
+                  <ScrollReveal variant="fadeUp" delay={i * 0.15} key={i} className="group relative overflow-hidden bg-white border-b md:border-b-0 md:border-r border-neutral-100 last:border-0 cursor-pointer touch-action-manipulation">
+                    <div onClick={() => { setActivePage('meetings'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="block w-full h-full">
+                      <div className="aspect-[4/3] md:aspect-[4/5] lg:aspect-[2/3] overflow-hidden">
+                        <img draggable="false" loading="lazy" decoding="async" src={pkg.img} width="600" height="800" className="w-full h-full object-cover transition-transform duration-[1000ms] md:group-hover:scale-105 select-none will-change-transform" alt={pkg.title} />
+                      </div>
+                      <div className="p-8 md:p-12 text-center md:group-hover:bg-neutral-50 transition-colors duration-300 pointer-events-none">
+                        <h3 className="text-sm font-serif text-black uppercase tracking-[0.2em] mb-4">{pkg.title}</h3>
+                        <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-[#D4AF37] border-b border-[#D4AF37]/30 pb-1">Inquire Availability</span>
+                      </div>
+                    </div>
+                  </ScrollReveal>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* HOME GALLERY SLIDER (SPLIDE CAROUSEL) */}
+          <section id="home-gallery" className="py-20 md:py-32 bg-black overflow-hidden relative select-none">
+            <ScrollReveal variant="fadeUp" className="text-center mb-10 md:mb-16 max-w-7xl mx-auto px-4">
+              <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Visual Journey</h4>
+              <WordReveal text="Gallery" as="h2" className="text-2xl md:text-4xl font-serif text-white uppercase tracking-wide justify-center" />
+              <div className="h-[1px] w-16 md:w-24 bg-[#D4AF37]/50 mx-auto mt-6 md:mt-8"></div>
+            </ScrollReveal>
+            
+            <ScrollReveal variant="fadeIn" delay={0.2} duration={0.8} className="w-full">
+              <ParallaxCarousel items={homeGalleryItems} onOpenDetail={(id) => {
+                const item = galleryItems.find(i => i.id === id);
+                if (item) setSelectedGalleryItem(item);
+              }} />
+            </ScrollReveal>
+
+            <ScrollReveal variant="fadeUp" delay={0.4} className="flex justify-center mt-4 md:mt-8 relative z-20">
+              <button onClick={() => { setActivePage('gallery'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="border border-white/50 text-white hover:bg-white hover:text-black transition-colors duration-300 px-8 py-3 md:px-12 md:py-4 text-[10px] font-bold uppercase tracking-[0.3em] focus-ring touch-action-manipulation">
+                Discover More
+              </button>
+            </ScrollReveal>
+          </section>
+
+          {/* AREA & LOCATION */}
+          <section id="location" className="py-20 md:py-24 bg-white px-4 border-t border-neutral-100">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16">
+              <ScrollReveal variant="slideRight">
+                <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 md:mb-6 uppercase italic">Integrated Resort Experience</h4>
+                <WordReveal text="Accommodation Area" as="h2" delay={0.2} stagger={0.06} className="text-2xl lg:text-3xl font-serif text-black mb-8 uppercase tracking-wide" />
+                
+                <div className="flex items-start gap-4 mb-10 text-neutral-600 bg-neutral-50 p-6 rounded-sm border border-neutral-100">
+                  <MapPin className="text-[#D4AF37] shrink-0 mt-1" size={20} />
+                  <p className="text-sm leading-relaxed">
+                    Terletak strategis di kawasan Pantai Drini, resor ini menawarkan akses mudah ke berbagai destinasi eksotis dengan tetap menjaga privasi mutlak Anda:<br/><br/>
+                    Jl. Pantai Drini, Wonosobo I, Banjarejo, Kec. Tanjungsari, Kabupaten Gunung Kidul, Daerah Istimewa Yogyakarta 55881
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
+                  <div className="space-y-4">
+                     {[
+                        { name: "Pool KSP Sinar Jaya", dist: "0 km" }, { name: "Pool Jeep Wisata Pantai Drini", dist: "0 km" }, { name: "Drini Park", dist: "0 km" }, { name: "Pantai Drini", dist: "0,1 km" }, { name: "On The Rock", dist: "0,2 km" }
+                     ].map((loc, i) => (
+                        <div key={i} className="flex justify-between items-center border-b border-neutral-100 pb-3 min-h-[32px]">
+                           <span className="text-[13px] font-medium text-neutral-700">{loc.name}</span>
+                           <span className="text-[11px] font-bold tracking-widest text-[#D4AF37]">{loc.dist}</span>
+                        </div>
+                     ))}
+                  </div>
+                  <div className="space-y-4">
+                     {[
+                        { name: "Pom Mini", dist: "0,3 km" }, { name: "Pantai Watu Kodok", dist: "1 km" }, { name: "Pantai Sepanjang", dist: "1 km" }, { name: "SPKLU Drini Hills", dist: "2 km" }, { name: "Pantai Krakal", dist: "3 km" }
+                     ].map((loc, i) => (
+                        <div key={i} className="flex justify-between items-center border-b border-neutral-100 pb-3 min-h-[32px]">
+                           <span className="text-[13px] font-medium text-neutral-700">{loc.name}</span>
+                           <span className="text-[11px] font-bold tracking-widest text-[#D4AF37]">{loc.dist}</span>
+                        </div>
+                     ))}
+                  </div>
+                </div>
+              </ScrollReveal>
+              
+              <ScrollReveal variant="blur" delay={0.3} className="h-[350px] md:h-full md:min-h-[400px] w-full bg-neutral-100 rounded-sm overflow-hidden shadow-inner relative group">
+                 {mapLoaded ? (
+                   <iframe 
+                      title="Drini Park Resort Location Map"
+                      src="https://maps.google.com/maps?q=Drini%20Park%20Resort,%20Banjarejo,%20Kec.%20Tanjungsari,%20Kabupaten%20Gunungkidul&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                      width="100%" height="100%" style={{ border: 0 }} allowFullScreen="" loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="absolute inset-0"
+                   ></iframe>
+                 ) : (
+                   <div ref={mapRef} className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-sm tracking-widest uppercase">
+                      Loading Map...
+                   </div>
+                 )}
+                 <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm p-4 text-[10px] uppercase tracking-widest font-bold text-black border border-neutral-200 pointer-events-none">
+                    Explore Map
+                 </div>
+              </ScrollReveal>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* ROOMS PAGE DETAIL */}
+      {activePage === 'rooms' && (
+        <div className="pt-24 md:pt-32 pb-24 animate-in fade-in duration-500 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <button onClick={() => { setActivePage('home'); setTimeout(() => document.getElementById('rooms')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="flex items-center text-neutral-500 hover:text-black mb-8 md:mb-10 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-200 group w-fit min-h-[48px] touch-action-manipulation focus-ring">
+              <ChevronLeft size={16} className="mr-2 md:group-hover:-translate-x-1 transition-transform duration-200" /> Back to Home
+            </button>
+            <ScrollReveal variant="fadeUp" className="text-center mb-16 md:mb-20">
+              <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Accommodations</h4>
+              <WordReveal text="Rooms & Suites" as="h2" delay={0.2} stagger={0.1} className="text-3xl md:text-5xl font-serif uppercase tracking-wide justify-center" />
+              <p className="text-neutral-500 mt-6 max-w-2xl mx-auto font-light leading-relaxed text-sm md:text-base">Lima private sanctuary — masing-masing dirancang dengan satu prioritas yang tidak pernah berkompromi: privasi, proporsi ruang, dan kualitas tinggal yang sesungguhnya. Setiap unit adalah ruang tenang yang menanti Anda, bukan sekadar kamar yang tersedia.</p>
+            </ScrollReveal>
+            <div className="space-y-24 md:space-y-40">
+              {roomsData.map((room, idx) => (
+                <ScrollReveal key={room.name} id={`room-${room.name.toLowerCase().replace(/[\s/]+/g, '-')}`} variant={idx % 2 !== 0 ? "slideRight" : "slideLeft"} className={`flex flex-col md:flex-row gap-10 md:gap-16 items-center scroll-mt-24 md:scroll-mt-32 ${idx % 2 !== 0 ? 'md:flex-row-reverse' : ''}`}>
+                  <div className="w-full md:w-3/5 aspect-[4/3] md:aspect-video overflow-hidden rounded-sm shadow-xl md:shadow-2xl">
+                    <img loading="lazy" decoding="async" src={room.image} alt={room.name} width="800" height="600" className="w-full h-full object-cover transition-transform duration-[1500ms] md:hover:scale-105 will-change-transform" />
+                  </div>
+                  <div className="w-full md:w-2/5">
+                    <h3 className="text-2xl md:text-3xl font-serif mb-6 tracking-wide text-center md:text-left">{room.name}</h3>
+                    <blockquote className="border-l-[1px] border-[#D4AF37] pl-4 md:pl-5 mb-8 mx-auto md:mx-0 max-w-lg md:max-w-none">
+                      <p className="font-quote text-lg md:text-xl italic text-black tracking-wide leading-relaxed">{room.tagline}</p>
+                    </blockquote>
+                    <p className="text-neutral-500 font-light leading-loose text-justify mb-8 text-sm md:text-base">{room.desc}</p>
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-y-6 gap-x-2 mb-8 border-t border-b border-neutral-100 py-6">
+                      {[ { icon: room.name.includes("Sea") ? Waves : Trees, label: room.name.includes("Sea") ? "Sea View" : "Garden View" }, { icon: Bath, label: "Private Pool" }, { icon: Home, label: "Balcony" }, { icon: Coffee, label: "Coffee & Tea" }, { icon: Wifi, label: "WIFI" }, { icon: Car, label: "Valet Parking" }, { icon: Store, label: "Mini Store" }, { icon: Sun, label: "Rooftop" }, { icon: Utensils, label: "Restaurant" }, { icon: CreditCard, label: "ATM" } ].map((fac, i) => (
+                        <div key={i} className="flex flex-col items-center justify-start text-center group">
+                          <fac.icon size={20} strokeWidth={1.5} className="text-[#D4AF37] mb-2 md:mb-3 transition-transform duration-200 md:group-hover:scale-110" />
+                          <span className="text-[7.5px] sm:text-[8px] font-bold tracking-widest uppercase text-neutral-500 leading-tight px-1">{fac.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-6 md:gap-10 text-[10px] font-bold tracking-widest uppercase text-neutral-400 mb-10 justify-center md:justify-start">
+                      <div className="flex items-center gap-2"><Maximize size={14} className="text-[#D4AF37]"/> {room.size}</div>
+                      <div className="flex items-center gap-2"><BedDouble size={14} className="text-[#D4AF37]"/> {room.bed}</div>
+                    </div>
+                    <button onClick={scrollToBooking} className="w-full md:w-auto bg-black text-[#D4AF37] px-10 min-h-[56px] md:min-h-auto md:py-4 text-[12px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-neutral-800 transition-colors duration-200 touch-action-manipulation active:scale-[0.98] md:active:scale-95 focus-ring rounded-[8px] md:rounded-[1px]">Reserve Sanctuary</button>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PACKAGE DETAILS PAGE */}
+      {activePage === 'package-detail' && selectedPackageId && packageDetailsData[selectedPackageId] && (
+        <div className="pt-24 md:pt-32 pb-24 animate-in fade-in duration-500 bg-white min-h-screen">
+          <div className="max-w-7xl mx-auto px-6">
+            <button onClick={() => { setActivePage('home'); setTimeout(() => document.getElementById('package')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="flex items-center text-neutral-500 hover:text-black mb-8 md:mb-10 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-200 group w-fit min-h-[48px] touch-action-manipulation focus-ring">
+              <ChevronLeft size={16} className="mr-2 md:group-hover:-translate-x-1 transition-transform duration-200" /> Back to Experiences
+            </button>
+            <ScrollReveal variant="blur" className="w-full h-[40vh] md:h-[60vh] overflow-hidden rounded-sm shadow-xl md:shadow-2xl mb-12 md:mb-16 relative">
+              <img loading="lazy" decoding="async" src={packageDetailsData[selectedPackageId].heroImg} width="1200" height="800" alt={packageDetailsData[selectedPackageId].title} className={`w-full h-full object-cover ${selectedPackageId === 'floating' ? 'object-[50%_75%] md:object-[50%_85%]' : selectedPackageId === 'cake' ? 'object-[50%_85%]' : 'object-center'}`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+              <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16">
+                <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-3 md:mb-4 uppercase italic drop-shadow-md">{packageDetailsData[selectedPackageId].subtitle}</h4>
+                <WordReveal text={packageDetailsData[selectedPackageId].title} as="h1" delay={0.2} stagger={0.05} className="text-2xl md:text-5xl font-serif uppercase tracking-wide text-white drop-shadow-lg leading-tight" />
+              </div>
+            </ScrollReveal>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 md:gap-16">
+              <ScrollReveal variant="fadeUp" className="lg:col-span-2">
+                <h3 className="text-xl md:text-2xl font-serif text-black uppercase tracking-wide mb-6">Experience Overview</h3>
+                <p className="text-neutral-600 font-light leading-relaxed text-justify mb-10 md:mb-12 text-sm md:text-lg">{packageDetailsData[selectedPackageId].description}</p>
+                <h3 className="text-lg md:text-xl font-serif text-black uppercase tracking-wide mb-6 border-t border-neutral-100 pt-8 md:pt-10">What's Included</h3>
+                <ul className="space-y-4">
+                  {packageDetailsData[selectedPackageId].includes.map((inc, i) => (
+                    <li key={i} className="flex items-start text-neutral-600 font-light text-sm md:text-base">
+                      <Check size={18} className="text-[#D4AF37] mr-4 shrink-0 mt-0.5" />
+                      <span className="leading-snug">{inc}</span>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollReveal>
+              <ScrollReveal variant="slideRight" delay={0.2} className="lg:col-span-1">
+                <div className="bg-neutral-50 p-6 md:p-8 border border-neutral-100 shadow-xl lg:sticky lg:top-32 rounded-[12px] md:rounded-sm">
+                  <h4 className="font-serif text-lg md:text-xl text-black uppercase tracking-wide mb-4">Book This Experience</h4>
+                  <p className="text-neutral-500 font-light text-sm mb-6 md:mb-8 pb-6 md:pb-8 border-b border-neutral-200 leading-relaxed">Hubungi kami untuk mengatur jadwal dan menyesuaikan paket sesuai dengan kebutuhan Anda selama menginap.</p>
+                  <div className="mb-8">
+                    <span className="block text-[9px] font-bold tracking-[0.4em] text-neutral-400 uppercase mb-2 md:mb-3">Harga</span>
+                    <span className="text-xl font-serif text-[#D4AF37] tracking-wide">{packageDetailsData[selectedPackageId].price}</span>
+                  </div>
+                  <button onClick={() => handleGeneralInquiry(packageDetailsData[selectedPackageId].title)} className="w-full bg-black text-[#D4AF37] min-h-[56px] md:min-h-auto md:py-4 text-[12px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-neutral-800 transition-colors duration-200 shadow-lg touch-action-manipulation active:scale-[0.98] md:active:scale-95 rounded-[8px] md:rounded-sm focus-ring">Reserve Experience</button>
+                </div>
+              </ScrollReveal>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNIFIED MEETINGS PAGE */}
+      {activePage === 'meetings' && (
+        <div className="pt-24 md:pt-32 pb-24 animate-in fade-in duration-500 bg-neutral-50 min-h-screen">
+          <div className="max-w-7xl mx-auto px-6">
+            <button onClick={() => { setActivePage('home'); setTimeout(() => document.getElementById('meeting-package')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="flex items-center text-neutral-500 hover:text-black mb-8 md:mb-10 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-200 group w-fit min-h-[48px] touch-action-manipulation focus-ring">
+              <ChevronLeft size={16} className="mr-2 md:group-hover:-translate-x-1 transition-transform duration-200" /> Back to Home
+            </button>
+            
+            <ScrollReveal variant="blur" className="w-full h-[50vh] md:h-[60vh] overflow-hidden rounded-sm shadow-xl md:shadow-2xl mb-16 md:mb-20 relative flex items-center justify-center text-center">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 w-full h-full object-cover"
+              >
+                <source src="https://i.imgur.com/uYxomrP.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-black/60"></div>
+              
+              <div className="relative z-10 flex flex-col items-center justify-center p-6 md:p-12 w-full max-w-3xl">
+                <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 md:mb-6 uppercase italic drop-shadow-md">Executive Gatherings</h4>
+                <WordReveal text="Sky & Sea View Meetings" as="h1" delay={0.2} stagger={0.08} className="text-3xl md:text-5xl font-serif uppercase tracking-wide text-white drop-shadow-lg leading-tight justify-center" />
+                <p className="text-neutral-200 mt-6 md:mt-8 font-light leading-relaxed text-sm md:text-base drop-shadow-md">
+                  Dirancang khusus untuk mendukung fokus, privasi, dan dialog yang terarah — dengan standar hospitality luxury yang tidak pernah menginterupsi jalannya pertemuan Anda.
+                </p>
+              </div>
+            </ScrollReveal>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+              {detailedMeetingPackages.map((pkg, idx) => (
+                <ScrollReveal key={pkg.id} variant="fadeUp" delay={idx * 0.15} className="bg-white border border-neutral-200 p-8 md:p-10 rounded-sm shadow-sm hover:shadow-2xl transition-shadow duration-500 flex flex-col h-full relative group">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                  <h3 className="text-xl md:text-2xl font-serif text-black uppercase tracking-wide mb-2">{pkg.title}</h3>
+                  <div className="flex items-baseline gap-1 mb-8">
+                    <span className="text-2xl font-serif text-[#D4AF37] tracking-wide">{pkg.price}</span>
+                    <span className="text-[10px] font-bold tracking-widest text-neutral-400 uppercase">{pkg.unit}</span>
+                  </div>
+                  
+                  <div className="flex-grow">
+                    <ul className="space-y-4 mb-10">
+                      {pkg.includes.map((inc, i) => (
+                        <li key={i} className="flex items-start text-neutral-600 font-light text-sm">
+                          <Check size={16} className="text-[#D4AF37] mr-3 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{inc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button onClick={() => handleGeneralInquiry(pkg.title)} className="w-full bg-neutral-900 text-[#D4AF37] min-h-[56px] md:min-h-auto md:py-4 text-[12px] md:text-[10px] font-bold tracking-widest uppercase hover:bg-black transition-colors duration-200 shadow-md touch-action-manipulation active:scale-[0.98] rounded-sm focus-ring mt-auto">
+                    Inquire Now
+                  </button>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GALLERY PAGE */}
+      {activePage === 'gallery' && (
+        <div className="min-h-screen bg-stone-50 font-sans animate-in fade-in duration-500 pb-24">
+          
+          <div className="relative h-[100dvh] flex items-center justify-center overflow-hidden">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover"
+            >
+              <source src="https://i.imgur.com/Rl1cnO6.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-black/50" />
+            <div className="relative z-10 text-center text-white px-4">
+              <h1 className="text-5xl md:text-8xl font-serif font-light tracking-wide mb-4 uppercase">
+                Gallery
+              </h1>
+              <p className="text-sm md:text-xl font-light tracking-widest uppercase text-white/80">
+                Drini Park Resort — The Luxury of Nature
+              </p>
+            </div>
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 animate-bounce">
+              <span className="text-xs tracking-widest uppercase">Scroll</span>
+              <ChevronDown size={20} />
+            </div>
+          </div>
+
+          <div className="text-center py-20 px-4 max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-800 mb-6 uppercase tracking-wide">
+              Momen di Drini Park
+            </h2>
+            <p className="text-gray-500 text-sm md:text-base leading-relaxed font-light">
+              Dari lanskap pesisir selatan hingga presisi detail di setiap sanctuary —
+              setiap bidikan adalah undangan untuk mengalaminya secara langsung.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-3 px-4 mb-12">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-6 py-2.5 text-[10px] md:text-xs font-bold tracking-widest uppercase border rounded-full transition-all duration-300 touch-action-manipulation focus-ring ${
+                  activeCategory === cat
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-transparent text-gray-600 border-gray-300 hover:border-gray-900 hover:text-gray-900"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          <div className="max-w-7xl mx-auto px-6 pb-20">
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
+              {filteredGallery.slice(0, visibleCount).map((item, idx) => (
+                <ScrollReveal key={item.id} variant="fadeUp" delay={(idx % 3) * 0.1} className="break-inside-avoid mb-6">
+                  <GalleryCard item={item} onClick={setSelectedGalleryItem} />
+                </ScrollReveal>
+              ))}
+            </div>
+
+            {filteredGallery.length === 0 && (
+              <div className="text-center py-20 text-neutral-400 text-sm tracking-widest uppercase font-light">
+                Assets are currently being updated
+              </div>
+            )}
+
+            {/* Tombol Load More */}
+            {visibleCount < filteredGallery.length && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={() => setVisibleCount(v => v + 24)}
+                  className="border border-neutral-300 text-neutral-600 hover:bg-black hover:border-black hover:text-white transition-all duration-300 px-8 py-3 text-[10px] font-bold uppercase tracking-[0.2em] rounded-full focus-ring touch-action-manipulation"
+                >
+                  Load More ({filteredGallery.length - visibleCount} remaining)
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <div className="max-w-7xl mx-auto px-6 flex justify-center pb-12 mt-8">
+            <button onClick={() => { setActivePage('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center justify-center text-neutral-500 hover:text-black text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-200 group w-fit min-h-[48px] touch-action-manipulation focus-ring">
+              <ChevronLeft size={16} className="mr-2 md:group-hover:-translate-x-1 transition-transform duration-200" /> Back to Home
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL LIGHTBOX GALERI (Bisa dipanggil dari Home/Gallery) */}
+      <GalleryLightbox
+        item={selectedGalleryItem}
+        onClose={() => setSelectedGalleryItem(null)}
+        onPrev={handleGalleryPrev}
+        onNext={handleGalleryNext}
+      />
+
+      {/* FOOTER */}
+      <footer className="bg-white border-t border-neutral-100 pt-16 md:pt-20 pb-32 lg:pb-36 px-6 overflow-hidden">
+        <ScrollReveal variant="fadeUp" className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-7 md:gap-0">
+            
+            {/* KIRI: Lokasi & Hak Cipta */}
+            <div className="flex flex-col items-start w-full md:w-1/2">
+              <h4 className="text-[#D4AF37] font-bold tracking-[0.2em] text-[10px] md:text-[11px] mb-4 uppercase">
+                Drini Park Resort
+              </h4>
+              <a href="https://maps.app.goo.gl/YuwbKeuR1KXYhgaCA" target="_blank" rel="noopener noreferrer" className="group cursor-pointer max-w-[300px] touch-action-manipulation focus-ring mb-6 md:mb-8 block">
+                <p className="text-[11px] md:text-[13px] font-sans font-medium text-neutral-800 leading-relaxed tracking-wide group-hover:text-[#D4AF37] transition-colors duration-200">
+                  Jl. Pantai Drini, Wonosobo I, Banjarejo, Kec. Tanjungsari, Kabupaten Gunung Kidul, Daerah Istimewa Yogyakarta 55881 <ArrowUpRight size={14} className="inline mb-0.5 ml-1 opacity-50 group-hover:opacity-100 transition-opacity" />
+                </p>
+              </a>
+
+              <div className="text-[9px] md:text-[11px] font-medium tracking-[0.05em] text-neutral-500 flex flex-col gap-1.5 md:gap-2 max-w-[300px]">
+                <p>&copy; {new Date().getFullYear()} Drini Park Resort. All Rights Reserved.</p>
+                <p>Terms & Conditions | Privacy Policy</p>
+              </div>
+            </div>
+
+            {/* KANAN: Get in Touch & Sosial Media */}
+            <div className="flex flex-col md:items-end w-full md:w-1/2 border-t border-neutral-100 md:border-t-0 pt-5 md:pt-0">
+              <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start w-full md:w-auto">
+                <h4 className="text-[#D4AF37] font-bold tracking-[0.2em] text-[10px] md:text-[11px] md:mb-6 uppercase m-0">
+                  Get in Touch
+                </h4>
+                
+                {/* Mobile View: Ikon berderet sejajar */}
+                <div className="flex md:hidden items-center gap-6">
+                  <a href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] active:scale-95 transition-transform touch-action-manipulation focus-ring">
+                    <Instagram size={20} />
+                  </a>
+                  <a href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] active:scale-95 transition-transform touch-action-manipulation focus-ring">
+                    <TiktokIcon size={20} />
+                  </a>
+                  <a href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] active:scale-95 transition-transform touch-action-manipulation focus-ring">
+                    <Facebook size={20} />
+                  </a>
+                </div>
+
+                {/* Desktop View: Ikon dan nama akun berderet vertikal */}
+                <div className="hidden md:flex flex-col items-start gap-5">
+                  <a href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 cursor-pointer transition-colors duration-200 focus-ring">
+                    <Instagram className="text-[#D4AF37] group-hover:scale-110 transition-transform duration-200" size={18} />
+                    <span className="text-[13px] font-medium text-neutral-600 group-hover:text-black transition-colors duration-200">@driniparkresort</span>
+                  </a>
+                  <a href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 cursor-pointer transition-colors duration-200 focus-ring">
+                    <TiktokIcon className="text-[#D4AF37] group-hover:scale-110 transition-transform duration-200" size={18} />
+                    <span className="text-[13px] font-medium text-neutral-600 group-hover:text-black transition-colors duration-200">@driniparkresort</span>
+                  </a>
+                  <a href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 cursor-pointer transition-colors duration-200 focus-ring">
+                    <Facebook className="text-[#D4AF37] group-hover:scale-110 transition-transform duration-200" size={18} />
+                    <span className="text-[13px] font-medium text-neutral-600 group-hover:text-black transition-colors duration-200">Drini Park Resort</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </ScrollReveal>
+      </footer>
+
+      {/* FAB - DESKTOP & MOBILE */}
+      <div 
+        className={`fixed bottom-6 lg:bottom-10 left-1/2 -translate-x-1/2 z-[140] transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform max-w-[calc(100vw-24px)] pb-[env(safe-area-inset-bottom)] w-full sm:w-auto lg:max-w-none lg:w-auto ${floatingBarVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12 pointer-events-none'}`}
+        onMouseEnter={() => { isFabHoveredRef.current = true; setFloatingBarVisible(true); }}
+        onMouseLeave={() => { isFabHoveredRef.current = false; if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current); scrollTimeoutRef.current = setTimeout(() => setFloatingBarVisible(false), 2500); }}
+        onTouchStart={() => { isFabHoveredRef.current = true; }}
+        onTouchEnd={() => { isFabHoveredRef.current = false; if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current); scrollTimeoutRef.current = setTimeout(() => setFloatingBarVisible(false), 2500); }}
+      >
+        {/* === DESKTOP === */}
+        <div className="hidden lg:flex items-center bg-[#1c1c1c]/75 backdrop-blur-md border border-white/10 rounded-full px-10 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-6 pr-8 border-r border-white/20">
+             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">Get in Touch</span>
+             <div className="flex items-center text-white gap-4">
+                <a aria-label="Instagram" href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noreferrer" className="hover:text-[#D4AF37] transition-colors duration-200 touch-action-manipulation focus-ring"><Instagram size={18} /></a>
+                <a aria-label="Tiktok" href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noreferrer" className="hover:text-[#D4AF37] transition-colors duration-200 touch-action-manipulation focus-ring"><TiktokIcon size={18} /></a>
+                <a aria-label="Facebook" href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noreferrer" className="hover:text-[#D4AF37] transition-colors duration-200 touch-action-manipulation focus-ring"><Facebook size={18} /></a>
+             </div>
+          </div>
+          <a href="https://maps.app.goo.gl/YuwbKeuR1KXYhgaCA" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white hover:text-[#D4AF37] transition-colors duration-200 whitespace-nowrap touch-action-manipulation px-8 focus-ring">
+             <MapPin size={16} className="text-[#D4AF37]" /> <span>Getting Here</span>
+          </a>
+          <div className="pl-8 border-l border-white/20">
+             <button onClick={scrollToBooking} className="text-[#D4AF37] hover:text-white transition-colors duration-200 text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap flex items-center justify-center touch-action-manipulation active:scale-95 focus-ring">Book Now</button>
+          </div>
+        </div>
+
+        {/* === MOBILE === */}
+        <div className="flex lg:hidden bg-[#1c1c1c]/75 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] mx-auto">
+          <div className="flex items-center text-white shrink-0">
+              <a aria-label="Instagram" href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noreferrer" className="w-[40px] h-[40px] flex items-center justify-center hover:text-[#D4AF37] transition-colors"><Instagram size={18} /></a>
+              <a aria-label="Tiktok" href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noreferrer" className="w-[40px] h-[40px] flex items-center justify-center hover:text-[#D4AF37] transition-colors"><TiktokIcon size={18} /></a>
+              <a aria-label="Facebook" href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noreferrer" className="w-[40px] h-[40px] flex items-center justify-center hover:text-[#D4AF37] transition-colors"><Facebook size={18} /></a>
+          </div>
+          <div className="w-[1px] h-5 bg-white/20 shrink-0"></div>
+          <a href="https://maps.app.goo.gl/YuwbKeuR1KXYhgaCA" target="_blank" rel="noreferrer" className="flex items-center justify-center w-[44px] h-[44px] text-white hover:text-[#D4AF37] transition-colors shrink-0"><MapPin size={18} className="text-[#D4AF37]" /></a>
+          <div className="w-[1px] h-5 bg-white/20 shrink-0"></div>
+          <button onClick={scrollToBooking} className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.1em] px-3 h-[44px] flex items-center justify-center hover:text-white transition-colors shrink-0">Book Now</button>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+  </script>
+</body>
+</html>
