@@ -2,27 +2,52 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Drini Park Resort – Private Coastal Luxury Retreat</title>
+  <meta name="description" content="Drini Park Resort — private coastal luxury retreat di pesisir selatan Yogyakarta. Luxury rooms, signature experiences, meeting packages.">
+
+  <!-- Critical: Preload fonts to avoid FOIT -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500&display=optional">
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React 18 -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Lucide React icons (UMD) -->
   <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+
+  <!-- Swiper 11 — preloaded so SwiperCarousel mounts instantly -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+  <!-- Lenis smooth scroll — preloaded -->
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+
+  <!-- Babel (JSX transpiler) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; }
+    /* Prevent invisible content flash */
+    #root { min-height: 100vh; }
   </style>
 </head>
 <body>
   <div id="root"></div>
+
   <script type="text/babel" data-presets="react">
     // === React hooks ===
     const { useState, useEffect, useRef, useCallback } = React;
 
     // === Lucide icons (from CDN UMD) ===
     const { 
-      Menu, X, Calendar, Users, MapPin, Phone, Mail, Instagram, Facebook,
+      Menu, X, Calendar, Users, MapPin, Phone, Mail,
       ChevronRight, ChevronLeft, Anchor, Coffee, Utensils,
       BedDouble, Maximize, Eye, ArrowRight, Plus, Minus, ChevronDown,
       PlayCircle, Check, ExternalLink,
@@ -30,6 +55,20 @@
     } = LucideReact;
     const ImageIcon = LucideReact.Image;
     const MapIcon = LucideReact.Map;
+
+const Instagram = ({ size = 24, className = '', ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+  </svg>
+);
+
+const Facebook = ({ size = 24, className = '', ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+);
 
 // === 1. NATIVE SMOOTH SCROLL HOOK (LENIS INTEGRATION DYNAMIC LOAD) ===
 function useLenis() {
@@ -39,12 +78,15 @@ function useLenis() {
 
     const initLenis = () => {
       if (!window.Lenis) return;
-      
-      // Restriksi mobile dicabut agar smooth scroll berjalan konsisten di semua platform
+      // Disable Lenis on mobile devices to prevent jank and preserve native momentum scrolling
+      if (window.innerWidth < 768) return; 
+
       lenis = new window.Lenis({
         duration: 1.2,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
+        wrapper: window,
+        content: document.documentElement,
       });
 
       function raf(time) {
@@ -55,12 +97,12 @@ function useLenis() {
       rafId = requestAnimationFrame(raf);
     };
 
-    // Load Lenis stable version dynamically
+    // Load Lenis script dynamically to bypass bundler resolution issues
     if (window.Lenis) {
       initLenis();
     } else {
       const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@studio-freight/lenis@1.0.29/dist/lenis.min.js';
+      script.src = 'https://unpkg.com/lenis@1.1.13/dist/lenis.min.js';
       script.async = true;
       script.onload = initLenis;
       document.head.appendChild(script);
@@ -109,7 +151,6 @@ function ScrollReveal({ children, variant = "fadeUp", delay = 0, duration = 0.8,
   const style = {
     ...revealVariants[variant][isVisible ? 'visible' : 'hidden'],
     transition: `all ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delay}s`,
-    willChange: isVisible ? 'auto' : 'opacity, transform'
   };
 
   return <Tag id={id} ref={ref} className={className} style={style}>{children}</Tag>;
@@ -159,137 +200,126 @@ function WordReveal({ text, className = "", delay = 0, duration = 0.6, stagger =
 // Menyisipkan "l" (Large Thumbnail) pada URL imgur untuk menghemat bandwidth hingga 80% pada mode grid
 const getThumbUrl = (url) => url ? url.replace(/\.(jpeg|jpg|png)$/i, 'l.$1') : url;
 
-// === 4. SPLIDE CAROUSEL NATIVE INTEGRATION ===
-function ParallaxCarousel({ items, onOpenDetail }) {
+// === 4. SWIPER.JS CAROUSEL DINAMIS (ROOM, EXP, GALLERY) ===
+function SwiperCarousel({ items, onOpenDetail, sliderId, itemType = 'experience' }) {
   const sliderRef = useRef(null);
-  const splideInstanceRef = useRef(null);
-  // Hapus state isLoaded karena menahan rendering visual
-  
+  const swiperInstanceRef = useRef(null);
+
   useEffect(() => {
-    const initSplide = () => {
-      if (!sliderRef.current || !window.Splide) return;
-      
-      const splide = new window.Splide(sliderRef.current, {
-        type: 'loop',          // infinite loop
-        perPage: 3,
-        focus: 'center',       // slide aktif di tengah
-        speed: 1500,           // durasi transisi 1.5 detik — kunci smooth-nya
-        drag: true,            // bisa di-drag
-        flickMaxPages: 3,      // seberapa jauh bisa "dilempar"
-        flickPower: 400,       // kekuatan momentum saat lepas drag
-        updateOnMove: true,
-        pagination: true,
-        arrows: false,         // Hide arrows, rely on drag and click
-        padding: '8%',
-        gap: '1.5rem',
-        easing: 'cubic-bezier(0.25, 1, 0.5, 1)', // ease out expo
-        breakpoints: {
-          1024: { perPage: 2, padding: '5%' },
-          768:  { perPage: 1, padding: '15%', gap: '1rem' },
-          640:  { perPage: 1, padding: '10%', gap: '0.5rem' },
+    const initSwiper = () => {
+      if (!sliderRef.current || !window.Swiper) return;
+
+      const swiper = new window.Swiper(sliderRef.current, {
+        slidesPerView: 'auto',
+        spaceBetween: 24,
+        loop: true,
+        grabCursor: true,
+        speed: 900,
+        freeMode: {
+          enabled: true,
+          momentum: true,
+          momentumRatio: 0.55,
+          momentumVelocityRatio: 0.9,
+          momentumBounce: false,
+          sticky: false,
         },
-      });
 
-      const updateClasses = () => {
-        const slides = splide.Components.Slides.get();
-        const current = splide.index;
-        const total = splide.length;
+        touchRatio: 1.2,
+        longSwipesRatio: 0.15,
 
-        slides.forEach((s) => {
-          s.slide.classList.remove('is-center', 'is-prev', 'is-next');
-        });
+        mousewheel: { forceToAxis: true, sensitivity: 0.8 },
+        keyboard: { enabled: true, onlyInViewport: true },
 
-        // Add is-center to current slide AND its clones
-        slides.forEach(s => {
-          if (s.index === current) s.slide.classList.add('is-center');
-        });
+        scrollbar: { el: sliderRef.current.querySelector('.luxury-scrollbar'), draggable: true, hide: false },
 
-        for (let i = 1; i <= 2; i++) {
-          const prevIdx = (current - i + total) % total;
-          const nextIdx = (current + i) % total;
-          
-          slides.forEach(s => {
-             if (s.index === prevIdx) s.slide.classList.add('is-prev');
-             if (s.index === nextIdx) s.slide.classList.add('is-next');
-          });
-        }
-      };
+        breakpoints: {
+          0:   { spaceBetween: 16, freeMode: { momentumRatio: 0.7, momentumBounce: false } },
+          768: { spaceBetween: 24 }
+        },
 
-      splide.on('mounted moved', updateClasses);
-
-      splide.on('click', (slide) => {
-        if (slide.slide.classList.contains('is-center')) {
-          const id = items[slide.index].id;
-          if (id) onOpenDetail(id);
-        } else {
-          splide.go(slide.index);
+        // Override easing default Swiper & Handle Click React
+        on: {
+          init: function () {
+            this.el.style.setProperty(
+              '--swiper-transition-timing-function',
+              'var(--easing-luxury)'
+            );
+          },
+          click: function (s, e) {
+            // Memastikan klik pada slide yang merender halaman detail atau geser viewport
+            if (s.clickedSlide && s.clickedSlide.classList.contains('swiper-slide-active')) {
+              const realIndex = s.clickedSlide.getAttribute('data-swiper-slide-index');
+              const identifier = items[realIndex]?.id || items[realIndex]?.name;
+              if (identifier && onOpenDetail) onOpenDetail(identifier);
+            } else if (s.clickedIndex !== undefined) {
+              s.slideTo(s.clickedIndex);
+            }
+          }
         }
       });
 
-      splide.mount();
-      splideInstanceRef.current = splide;
+      swiperInstanceRef.current = swiper;
+
     };
 
-    if (window.Splide) {
-      initSplide();
+    // Swiper preloaded in <head> — poll until available (avoids duplicate injection)
+    if (window.Swiper) {
+      initSwiper();
     } else {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js';
-      script.async = true;
-      script.onload = () => {
-        initSplide();
-      };
-      document.head.appendChild(script);
+      let attempts = 0;
+      const wait = setInterval(() => {
+        attempts++;
+        if (window.Swiper) { clearInterval(wait); initSwiper(); }
+        else if (attempts > 100) clearInterval(wait); // 5s max
+      }, 50);
+      return () => clearInterval(wait);
     }
 
     return () => {
-      if (splideInstanceRef.current) splideInstanceRef.current.destroy();
+      if (swiperInstanceRef.current) {
+        swiperInstanceRef.current.destroy(true, true);
+        swiperInstanceRef.current = null;
+      }
     };
   }, [items, onOpenDetail]);
 
   return (
-    <div className="splide relative select-none w-full max-w-full overflow-hidden pb-12 pt-4" ref={sliderRef}>
-      <div className="splide__track">
-        <ul className="splide__list">
-          {items.map((pkg, idx) => {
-            // Pre-injeksi kelas CSS agar wujud awal sudah presisi tanpa menunggu kalkulasi JS
-            let initialClass = '';
-            if (idx === 0) initialClass = 'is-center';
-            else if (idx === 1) initialClass = 'is-next';
-            else if (idx === items.length - 1) initialClass = 'is-prev';
-
-            return (
-            <li key={`${pkg.id}-${idx}`} className={`splide__slide ${initialClass}`}>
-              <div className="slide-card relative overflow-hidden shadow-2xl bg-neutral-900">
+    <div className="swiper luxury-swiper" id={sliderId} ref={sliderRef} data-lenis-prevent>
+      <div className="swiper-wrapper">
+        {items.map((item, idx) => (
+          <div className={`swiper-slide luxury-slide ${itemType === 'room' ? 'room-slide' : ''}`} key={`${item.id || item.name}-${idx}`} data-swiper-slide-index={idx}>
+            <div className="slide-frame">
+              <div className="slide-image-wrap">
                 <img 
-                  loading={idx < 3 ? "eager" : "lazy"} 
+                  src={item.img || getThumbUrl(item.image)} 
+                  alt={item.title || item.name || item.category || 'Drini Park Resort'} 
+                  loading={idx < 3 ? 'eager' : 'lazy'} 
                   decoding="async" 
-                  src={pkg.img || getThumbUrl(pkg.image)} 
-                  alt={pkg.title || pkg.category} 
-                  className={`w-full h-full object-cover transition-transform duration-700 ease-out ${pkg.id === 'floating' ? 'object-[50%_75%] md:object-[50%_80%]' : pkg.id === 'cake' ? 'object-[50%_85%]' : 'object-center'}`} 
                 />
-                <div className={`absolute inset-0 bg-gradient-to-t ${pkg.title ? 'from-black via-black/60 to-transparent' : 'from-black/80 via-black/20 to-transparent'}`}></div>
-                <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-8">
-                  {pkg.title && (
-                    <h3 className="text-white font-serif uppercase tracking-widest mb-2 drop-shadow-md text-base md:text-[22px]">
-                      {pkg.title}
-                    </h3>
-                  )}
-                  {(pkg.desc || pkg.description) && (
-                    <p className="slide-desc text-neutral-100 text-xs md:text-sm line-clamp-2 leading-relaxed mb-4 drop-shadow-md">{pkg.desc || pkg.description}</p>
-                  )}
-                  <span className="text-[#D4AF37] text-[9px] font-bold uppercase tracking-[0.3em] drop-shadow-md">
-                    {pkg.badge || pkg.category || "Signature Experience"}
-                  </span>
-                </div>
               </div>
-            </li>
-          )})}
-        </ul>
+              <div className="slide-gradient"></div>
+            </div>
+            <div className="slide-info-below">
+              <span className="tag-label">
+                {itemType === 'room' ? 'DRINI PARK RESORT' : (item.badge || (itemType === 'gallery' ? 'VISUAL JOURNEY' : 'SIGNATURE EXPERIENCE'))}
+              </span>
+              <h3 className="slide-title">{item.title || item.name || item.category}</h3>
+              {itemType === 'room' && (
+                <div className="slide-specs">
+                  <span>2 ADULTS</span>
+                  <span>1 BEDROOM</span>
+                  <span>{item.bed ? item.bed.toUpperCase().split('/')[0].trim() : 'KING-SIZE BED'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
+      <div className="swiper-scrollbar luxury-scrollbar"></div>
     </div>
   );
 }
+
 
 // === 5. KOMPONEN GALERI KHUSUS (GALLERY CARD & LIGHTBOX) ===
 function GalleryCard({ item, onClick }) {
@@ -648,11 +678,11 @@ export default function App() {
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400&display=optional';
     document.head.appendChild(fontLink);
     
-    // Inject Splide CSS to bypass React bundler issues
-    const splideCSS = document.createElement('link');
-    splideCSS.rel = 'stylesheet';
-    splideCSS.href = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css';
-    document.head.appendChild(splideCSS);
+
+        const editorialFontLink = document.createElement('link');
+    editorialFontLink.rel = 'stylesheet';
+    editorialFontLink.href = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500&display=swap';
+    document.head.appendChild(editorialFontLink);
   }, []);
 
   useEffect(() => {
@@ -725,6 +755,77 @@ export default function App() {
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, []);
+
+  // === CUSTOM CURSOR (DESKTOP ONLY) EVENT BINDING ===
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    const cursor = document.querySelector('.luxury-cursor');
+    const zones = document.querySelectorAll('.experiences-section');
+    if (!cursor || zones.length === 0) return;
+    
+    let mx = 0, my = 0, cx = 0, cy = 0;
+    let rafId;
+
+    const animate = () => {
+      cx += (mx - cx) * 0.18;
+      cy += (my - cy) * 0.18;
+      if (cursor) {
+        cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%) scale(${cursor.classList.contains('is-visible') ? (cursor.classList.contains('is-dragging') ? 0.85 : 1) : 0})`;
+      }
+      rafId = requestAnimationFrame(animate);
+    };
+    animate();
+
+    const onMouseMove = e => { mx = e.clientX; my = e.clientY; };
+    const onMouseEnter = () => cursor.classList.add('is-visible');
+    const onMouseLeave = () => cursor.classList.remove('is-visible','is-dragging');
+    const onMouseDown = () => cursor.classList.add('is-dragging');
+    const onMouseUp = () => cursor.classList.remove('is-dragging');
+
+    document.addEventListener('mousemove', onMouseMove);
+    
+    // Bind ke semua area slider yang ada
+    zones.forEach(z => {
+      z.addEventListener('mouseenter', onMouseEnter);
+      z.addEventListener('mouseleave', onMouseLeave);
+      z.addEventListener('mousedown', onMouseDown);
+      z.addEventListener('mouseup', onMouseUp);
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      document.removeEventListener('mousemove', onMouseMove);
+      zones.forEach(z => {
+        z.removeEventListener('mouseenter', onMouseEnter);
+        z.removeEventListener('mouseleave', onMouseLeave);
+        z.removeEventListener('mousedown', onMouseDown);
+        z.removeEventListener('mouseup', onMouseUp);
+      });
+    };
+  }, [activePage]);
+
+  // === FADE-IN SECTION & SCROLL FINAL TOUCH ===
+  useEffect(() => {
+    // Timeout ringan agar komponen lain selesai render sebelum di-observe
+    const timer = setTimeout(() => {
+      document.querySelectorAll('section:not(.experiences-section)').forEach(el => {
+        el.classList.add('fade-in-section');
+      });
+
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -80px 0px' });
+
+      document.querySelectorAll('.fade-in-section').forEach(el => io.observe(el));
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [activePage]);
 
   // Reset pagination saat mengganti kategori
   useEffect(() => {
@@ -874,33 +975,189 @@ export default function App() {
         </div>
       )}
 
-      {/* GLOBAL STYLES WITH ANIMATION FALLBACK, MOBILE OVERSCROLL FIX, & SPLIDE CSS */}
+      {/* GLOBAL STYLES WITH ANIMATION FALLBACK & MOBILE OVERSCROLL FIX */}
       <style dangerouslySetInnerHTML={{__html: `
-        /* === LENIS SMOOTH SCROLL CORE CSS === */
-        html.lenis, html.lenis body {
-          height: auto;
+        @media (min-width: 768px) {
+          body { overscroll-behavior-y: none; }
         }
-        .lenis.lenis-smooth {
-          scroll-behavior: auto !important;
-        }
-        .lenis.lenis-smooth [data-lenis-prevent] {
-          overscroll-behavior: contain;
-        }
-        .lenis.lenis-stopped {
+        
+        /* ── Swiper Luxury Carousel ─────────────────────────────── */
+        .experiences-section {
+          padding: 100px 0 80px;
+          background: #faf8f4; /* warna cream lembut Drini */
           overflow: hidden;
+          position: relative;
         }
-        .lenis.lenis-smooth iframe {
+        
+        .section-header {
+          padding: 0 max(80px, 5vw);
+          margin-bottom: 60px;
+        }
+        
+        .section-header .tag-label {
+          color: #8a7a5e;
+          display: block;
+          margin-bottom: 16px;
+        }
+        
+        .luxury-swiper {
+          overflow: visible !important;
+          padding-left: max(80px, 5vw);
+          padding-bottom: 50px;
+        }
+        
+        .luxury-slide {
+          width: 420px !important;
+          transition: opacity 0.9s var(--easing-luxury),
+                      transform 0.9s var(--easing-luxury) !important;
+          opacity: 0.4;
+          transform: scale(0.95);
+        }
+
+        .luxury-slide.room-slide {
+          width: 500px !important;
+        }
+        
+        .luxury-slide.swiper-slide-active,
+        .luxury-slide.swiper-slide-next {
+          opacity: 1;
+          transform: scale(1);
+        }
+        
+        .slide-frame {
+          position: relative;
+          overflow: hidden;
+          aspect-ratio: 4/5;
+          box-shadow: 0 0 0 8px #faf8f4, 0 0 0 9px rgba(138,122,94,0.15), 0 15px 35px rgba(0,0,0,0.03);
+          margin-bottom: 28px;
+        }
+        
+        .slide-image-wrap { width: 100%; height: 100%; overflow: hidden; }
+        
+        .slide-image-wrap img {
+          width: 100%; height: 100%;
+          object-fit: cover; display: block;
+          transform: scale(1.05);
+          transition: transform 1.4s var(--easing-luxury);
+        }
+        
+        .luxury-slide:hover .slide-image-wrap img { transform: scale(1.0); }
+        
+        .slide-gradient {
+          position: absolute; inset: auto 0 0 0; height: 40%;
+          background: linear-gradient(to top, rgba(0,0,0,0.25), transparent);
           pointer-events: none;
+        }
+        
+        .slide-info-below { 
+          padding: 0 4px;
+          text-align: left;
+          opacity: 0;
+          transform: translateY(15px);
+          transition: all 0.6s ease;
+        }
+        
+        .luxury-slide.swiper-slide-prev .slide-info-below,
+        .luxury-slide.swiper-slide-active .slide-info-below,
+        .luxury-slide.swiper-slide-next .slide-info-below {
+          opacity: 1;
+          transform: translateY(0);
+          transition-delay: 0.15s;
+        }
+
+        .slide-info-below .tag-label {
+          color: #8a7a5e;
+          display: block;
+          margin-bottom: 10px;
+        }
+        
+        .slide-title {
+          font-family: var(--font-display);
+          font-size: 1.6rem;
+          font-weight: 400;
+          color: #2a2520;
+          margin: 0;
+          letter-spacing: 0.01em;
+        }
+
+        .slide-specs {
+          display: flex; gap: 16px;
+          margin-top: 14px;
+          font-size: 11px;
+          letter-spacing: 0.2em;
+          color: #8a7a5e;
+          text-transform: uppercase;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .slide-specs span { display: inline-flex; align-items: center; }
+        .slide-specs span:not(:last-child)::after {
+          content: ''; display: inline-block;
+          width: 3px; height: 3px; background: currentColor;
+          border-radius: 50%; margin-left: 16px;
+          vertical-align: middle;
+        }
+        
+        /* Scrollbar minimalis ganti dot */
+        .luxury-scrollbar {
+          height: 1px !important;
+          background: rgba(138,122,94,0.15) !important;
+          margin: 40px max(80px, 5vw) 0 !important;
+          width: auto !important;
+          left: max(80px, 5vw) !important;
+          right: max(80px, 5vw) !important;
+          bottom: 0 !important;
+          position: relative !important;
+          border-radius: 0 !important;
+        }
+        
+        .luxury-scrollbar .swiper-scrollbar-drag {
+          background: #8a7a5e !important;
+          border-radius: 0 !important;
+          height: 1px !important;
+        }
+        
+        @media (max-width: 768px) {
+          .luxury-swiper { padding-left: 24px; }
+          .luxury-slide { width: 75vw !important; }
+          .luxury-slide.room-slide { width: 85vw !important; }
+          .section-header { padding: 0 24px; }
+          .luxury-scrollbar { margin: 30px 24px 0 !important; left: 24px !important; right: 24px !important; }
+        }
+
+        /* ──────────────────────────────────────────────────────── */
+
+        :root {
+          --font-display: 'Cormorant Garamond', serif;
+          --font-body: 'Inter', sans-serif;
+          --easing-luxury: cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         body { 
-          overflow-x: hidden; 
+          font-family: var(--font-body); 
+          font-weight: 300; 
+          letter-spacing: 0.01em;
+        }
+
+        h1, h2, h3, .heading-display {
+          font-family: var(--font-display);
+          font-weight: 300;
+          letter-spacing: 0.02em;
+          line-height: 1.1;
+        }
+
+        .tag-label {
+          font-family: var(--font-body);
+          font-size: 10px;
+          letter-spacing: 0.35em;
+          text-transform: uppercase;
+          font-weight: 400;
         }
 
         * { -webkit-font-smoothing: antialiased; }
-        .font-serif { font-family: 'Cinzel', serif !important; }
-        .font-quote { font-family: 'Playfair Display', serif !important; }
-        .font-sans { font-family: 'Inter', sans-serif !important; }
+        .font-serif { font-family: var(--font-display) !important; }
+        .font-quote { font-family: var(--font-display) !important; font-style: italic; }
+        .font-sans { font-family: var(--font-body) !important; }
         ::selection { background-color: #D4AF37; color: black; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -915,67 +1172,49 @@ export default function App() {
         @keyframes slideInTopNative { from { opacity: 0; transform: translate(-50%, -1rem); } to { opacity: 1; transform: translate(-50%, 0); } }
         .animate-in.fade-in { animation: fadeInNative 0.3s ease-out forwards; }
         .animate-in.slide-in-from-top-4 { animation: slideInTopNative 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        /* === SPLIDE CAROUSEL CUSTOM STYLES === */
-        .splide__slide .slide-card {
-          transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-          transform: scale(0.85);
-          opacity: 0.5;
-          cursor: grab;
-          height: 480px;
-          border-radius: 16px;
-        }
-        @media (max-width: 768px) {
-          .splide__slide .slide-card {
-            height: 400px;
-            border-radius: 8px;
+
+        /* === CUSTOM CURSOR DRAG CSS === */
+        @media (hover: hover) and (pointer: fine) {
+          .luxury-cursor {
+            position: fixed; top: 0; left: 0;
+            width: 72px; height: 72px;
+            border: 1px solid rgba(42,37,32,0.6);
+            border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.4s var(--easing-luxury), opacity 0.3s ease;
+            mix-blend-mode: difference;
           }
+          .luxury-cursor.is-visible {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+          }
+          .luxury-cursor.is-dragging {
+            transform: translate(-50%, -50%) scale(0.85);
+            background: rgba(255,255,255,0.1);
+          }
+          .cursor-label {
+            font-family: var(--font-body);
+            font-size: 9px; letter-spacing: 0.3em;
+            color: #fff;
+          }
+          .experiences-section { cursor: none; }
+          .experiences-section a, .experiences-section button { cursor: none; }
         }
-        .splide__slide.is-center .slide-card {
-          transform: scale(1);
-          opacity: 1;
-          outline: 2px solid rgba(212,175,55,0.4);
-          outline-offset: 4px;
-          cursor: pointer;
-        }
-        .splide__slide.is-prev .slide-card,
-        .splide__slide.is-next .slide-card {
-          transform: scale(0.9);
-          opacity: 0.7;
-          cursor: grab;
-        }
-        .splide__slide.is-center .slide-card:active,
-        .splide__slide.is-prev .slide-card:active,
-        .splide__slide.is-next .slide-card:active {
-          cursor: grabbing;
-        }
-        .splide__slide:not(.is-center) .slide-desc {
+
+        /* === FADE-IN SECTION & SMOOTH SCROLL === */
+        html { scroll-behavior: smooth; }
+
+        .fade-in-section {
           opacity: 0;
-          transform: translateY(10px);
+          transform: translateY(40px);
+          transition: opacity 1.2s var(--easing-luxury),
+                      transform 1.2s var(--easing-luxury);
         }
-        .splide__slide.is-center .slide-desc {
-          opacity: 1;
-          transform: translateY(0);
-          transition: all 0.6s ease 0.2s;
-        }
-        
-        /* Override Splide Pagination */
-        .splide__pagination {
-          bottom: -2rem;
-        }
-        .splide__pagination__page {
-          background: #ccc;
-          height: 4px;
-          width: 16px;
-          border-radius: 4px;
-          margin: 0 4px;
-          transition: all 0.3s ease;
-          opacity: 1;
-        }
-        .splide__pagination__page.is-active {
-          background: #D4AF37;
-          width: 32px;
-          transform: scale(1);
+        .fade-in-section.is-visible {
+          opacity: 1; transform: translateY(0);
         }
       `}} />
       
@@ -1262,47 +1501,40 @@ export default function App() {
             </div>
           </section>
 
-          {/* ACCOMMODATION */}
-          <section id="rooms" className="bg-black py-20 md:py-32 overflow-hidden select-none">
-            <div className="max-w-full px-4 lg:px-12">
-              <ScrollReveal variant="fadeUp" className="text-center mb-16 md:mb-24">
-                <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Accommodation Selection</h4>
-                <WordReveal text="Our Private Sanctuaries" as="h2" delay={0.2} stagger={0.05} className="text-2xl md:text-4xl font-serif text-white tracking-wide justify-center" />
-                <div className="h-[1px] w-16 md:w-24 bg-[#D4AF37]/50 mx-auto mt-6 md:mt-8"></div>
-              </ScrollReveal>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 bg-black md:border-y border-white/20 divide-y sm:divide-y-0 sm:divide-x divide-white/20 shadow-2xl w-full">
-                {roomsData.map((room, i) => (
-                  <ScrollReveal variant="fadeUp" delay={i * 0.1} key={i} className="group relative overflow-hidden bg-neutral-900 aspect-[4/5] sm:aspect-[2/3] lg:aspect-auto lg:h-[550px] xl:h-[600px] cursor-pointer touch-action-manipulation" as="div">
-                    <div onClick={() => { setActivePage('rooms'); setTimeout(() => { const targetId = `room-${room.name.toLowerCase().replace(/[\s/]+/g, '-')}`; document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' }); }, 100); }} className="w-full h-full block">
-                      <img draggable="false" loading="lazy" decoding="async" src={room.image} width="600" height="900" className="w-full h-full object-cover transition-transform duration-[1000ms] group-hover:scale-105 select-none will-change-transform" alt={room.name} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 pointer-events-none"></div>
-                      <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end pointer-events-none">
-                        <h3 className="text-white font-serif text-lg lg:text-xl uppercase tracking-widest mb-4 md:transition-transform md:duration-300 md:group-hover:-translate-y-4 will-change-transform max-w-[140px] leading-snug drop-shadow-md">
-                          {room.name}
-                        </h3>
-                        <div className="h-[1px] w-12 bg-[#D4AF37] origin-left md:scale-x-0 md:group-hover:scale-x-100 transition-transform duration-300 will-change-transform"></div>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-                ))}
-              </div>
+          {/* ACCOMMODATION (SWIPER.JS CAROUSEL) */}
+          <section id="rooms" className="experiences-section">
+            <div className="section-header">
+              <span className="tag-label">ACCOMMODATION SELECTION</span>
+              <h2 className="heading-display">Private<br/>Sanctuaries</h2>
             </div>
+            
+            <SwiperCarousel 
+              items={roomsData} 
+              itemType="room"
+              sliderId="roomsSlider"
+              onOpenDetail={(roomId) => {
+                setActivePage('rooms'); 
+                setTimeout(() => { 
+                  const targetId = `room-${roomId.toLowerCase().replace(/[\s/]+/g, '-')}`; 
+                  document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' }); 
+                }, 100);
+              }} 
+            />
           </section>
 
-          {/* PACKAGE PREVIEW (SPLIDE CAROUSEL) */}
-          <section id="package" className="pt-24 pb-12 bg-white">
-            <ScrollReveal variant="fadeUp" className="text-center mb-10 md:mb-16 max-w-7xl mx-auto px-4">
-              <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Curated For You</h4>
-              <WordReveal text="Signature Experiences" as="h2" className="text-2xl md:text-4xl font-serif text-black uppercase tracking-wide justify-center" />
-              <p className="text-neutral-500 mt-6 max-w-2xl mx-auto font-light leading-relaxed text-sm md:text-base">
-                Bukan daftar aktivitas. Ini adalah pilihan — sepenuhnya milik Anda, dijalani dalam ritme yang Anda tentukan sendiri. <em>Intentional in design. Effortless in execution.</em>
-              </p>
-            </ScrollReveal>
+          {/* PACKAGE PREVIEW (SWIPER.JS CAROUSEL) */}
+          <section id="package" className="experiences-section">
+            <div className="section-header">
+              <span className="tag-label">CURATED FOR YOU</span>
+              <h2 className="heading-display">Signature<br/>Experiences</h2>
+            </div>
             
-            <ScrollReveal variant="fadeIn" delay={0.2} duration={0.8} className="w-full">
-              <ParallaxCarousel items={allPackages} onOpenDetail={openPackageDetail} />
-            </ScrollReveal>
+            <SwiperCarousel 
+              items={allPackages} 
+              itemType="experience"
+              sliderId="experiencesSlider"
+              onOpenDetail={openPackageDetail} 
+            />
           </section>
 
           {/* CULINARY */}
@@ -1363,26 +1595,28 @@ export default function App() {
             </div>
           </section>
 
-          {/* HOME GALLERY SLIDER (SPLIDE CAROUSEL) */}
-          <section id="home-gallery" className="py-20 md:py-32 bg-black overflow-hidden relative select-none">
-            <ScrollReveal variant="fadeUp" className="text-center mb-10 md:mb-16 max-w-7xl mx-auto px-4">
-              <h4 className="text-[#D4AF37] font-bold tracking-[0.4em] text-[10px] mb-4 uppercase italic">Visual Journey</h4>
-              <WordReveal text="Gallery" as="h2" className="text-2xl md:text-4xl font-serif text-white uppercase tracking-wide justify-center" />
-              <div className="h-[1px] w-16 md:w-24 bg-[#D4AF37]/50 mx-auto mt-6 md:mt-8"></div>
-            </ScrollReveal>
+          {/* HOME GALLERY SLIDER (SWIPER.JS CAROUSEL) */}
+          <section id="home-gallery" className="experiences-section">
+            <div className="section-header">
+              <span className="tag-label">VISUAL JOURNEY</span>
+              <h2 className="heading-display">Moments at<br/>Drini Park</h2>
+            </div>
             
-            <ScrollReveal variant="fadeIn" delay={0.2} duration={0.8} className="w-full">
-              <ParallaxCarousel items={homeGalleryItems} onOpenDetail={(id) => {
+            <SwiperCarousel 
+              items={homeGalleryItems} 
+              itemType="gallery"
+              sliderId="gallerySlider"
+              onOpenDetail={(id) => {
                 const item = galleryItems.find(i => i.id === id);
                 if (item) setSelectedGalleryItem(item);
-              }} />
-            </ScrollReveal>
+              }} 
+            />
 
-            <ScrollReveal variant="fadeUp" delay={0.4} className="flex justify-center mt-4 md:mt-8 relative z-20">
-              <button onClick={() => { setActivePage('gallery'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="border border-white/50 text-white hover:bg-white hover:text-black transition-colors duration-300 px-8 py-3 md:px-12 md:py-4 text-[10px] font-bold uppercase tracking-[0.3em] focus-ring touch-action-manipulation">
+            <div className="flex justify-center mt-12 relative z-20">
+              <button onClick={() => { setActivePage('gallery'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="border border-[#8a7a5e] text-[#8a7a5e] hover:bg-[#8a7a5e] hover:text-white transition-colors duration-300 px-8 py-3 md:px-12 md:py-4 text-[10px] font-bold uppercase tracking-[0.3em] focus-ring touch-action-manipulation">
                 Discover More
               </button>
-            </ScrollReveal>
+            </div>
           </section>
 
           {/* AREA & LOCATION */}
@@ -1730,83 +1964,9 @@ export default function App() {
                   <a href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] active:scale-95 transition-transform touch-action-manipulation focus-ring">
                     <Instagram size={20} />
                   </a>
-                  <a href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] active:scale-95 transition-transform touch-action-manipulation focus-ring">
-                    <TiktokIcon size={20} />
-                  </a>
-                  <a href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="text-[#D4AF37] active:scale-95 transition-transform touch-action-manipulation focus-ring">
-                    <Facebook size={20} />
-                  </a>
-                </div>
+                  <a href="https://www.tikt
 
-                {/* Desktop View: Ikon dan nama akun berderet vertikal */}
-                <div className="hidden md:flex flex-col items-start gap-5">
-                  <a href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 cursor-pointer transition-colors duration-200 focus-ring">
-                    <Instagram className="text-[#D4AF37] group-hover:scale-110 transition-transform duration-200" size={18} />
-                    <span className="text-[13px] font-medium text-neutral-600 group-hover:text-black transition-colors duration-200">@driniparkresort</span>
-                  </a>
-                  <a href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 cursor-pointer transition-colors duration-200 focus-ring">
-                    <TiktokIcon className="text-[#D4AF37] group-hover:scale-110 transition-transform duration-200" size={18} />
-                    <span className="text-[13px] font-medium text-neutral-600 group-hover:text-black transition-colors duration-200">@driniparkresort</span>
-                  </a>
-                  <a href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 cursor-pointer transition-colors duration-200 focus-ring">
-                    <Facebook className="text-[#D4AF37] group-hover:scale-110 transition-transform duration-200" size={18} />
-                    <span className="text-[13px] font-medium text-neutral-600 group-hover:text-black transition-colors duration-200">Drini Park Resort</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </ScrollReveal>
-      </footer>
-
-      {/* FAB - DESKTOP & MOBILE */}
-      <div 
-        className={`fixed bottom-6 lg:bottom-10 left-1/2 -translate-x-1/2 z-[140] transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform max-w-[calc(100vw-24px)] pb-[env(safe-area-inset-bottom)] w-full sm:w-auto lg:max-w-none lg:w-auto ${floatingBarVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12 pointer-events-none'}`}
-        onMouseEnter={() => { isFabHoveredRef.current = true; setFloatingBarVisible(true); }}
-        onMouseLeave={() => { isFabHoveredRef.current = false; if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current); scrollTimeoutRef.current = setTimeout(() => setFloatingBarVisible(false), 2500); }}
-        onTouchStart={() => { isFabHoveredRef.current = true; }}
-        onTouchEnd={() => { isFabHoveredRef.current = false; if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current); scrollTimeoutRef.current = setTimeout(() => setFloatingBarVisible(false), 2500); }}
-      >
-        {/* === DESKTOP === */}
-        <div className="hidden lg:flex items-center bg-[#1c1c1c]/75 backdrop-blur-md border border-white/10 rounded-full px-10 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center gap-6 pr-8 border-r border-white/20">
-             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">Get in Touch</span>
-             <div className="flex items-center text-white gap-4">
-                <a aria-label="Instagram" href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noreferrer" className="hover:text-[#D4AF37] transition-colors duration-200 touch-action-manipulation focus-ring"><Instagram size={18} /></a>
-                <a aria-label="Tiktok" href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noreferrer" className="hover:text-[#D4AF37] transition-colors duration-200 touch-action-manipulation focus-ring"><TiktokIcon size={18} /></a>
-                <a aria-label="Facebook" href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noreferrer" className="hover:text-[#D4AF37] transition-colors duration-200 touch-action-manipulation focus-ring"><Facebook size={18} /></a>
-             </div>
-          </div>
-          <a href="https://maps.app.goo.gl/YuwbKeuR1KXYhgaCA" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white hover:text-[#D4AF37] transition-colors duration-200 whitespace-nowrap touch-action-manipulation px-8 focus-ring">
-             <MapPin size={16} className="text-[#D4AF37]" /> <span>Getting Here</span>
-          </a>
-          <div className="pl-8 border-l border-white/20">
-             <button onClick={scrollToBooking} className="text-[#D4AF37] hover:text-white transition-colors duration-200 text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap flex items-center justify-center touch-action-manipulation active:scale-95 focus-ring">Book Now</button>
-          </div>
-        </div>
-
-        {/* === MOBILE === */}
-        <div className="flex lg:hidden bg-[#1c1c1c]/75 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] mx-auto">
-          <div className="flex items-center text-white shrink-0">
-              <a aria-label="Instagram" href="https://www.instagram.com/driniparkresort/" target="_blank" rel="noreferrer" className="w-[40px] h-[40px] flex items-center justify-center hover:text-[#D4AF37] transition-colors"><Instagram size={18} /></a>
-              <a aria-label="Tiktok" href="https://www.tiktok.com/@driniparkresort" target="_blank" rel="noreferrer" className="w-[40px] h-[40px] flex items-center justify-center hover:text-[#D4AF37] transition-colors"><TiktokIcon size={18} /></a>
-              <a aria-label="Facebook" href="https://www.facebook.com/driniparkresort/" target="_blank" rel="noreferrer" className="w-[40px] h-[40px] flex items-center justify-center hover:text-[#D4AF37] transition-colors"><Facebook size={18} /></a>
-          </div>
-          <div className="w-[1px] h-5 bg-white/20 shrink-0"></div>
-          <a href="https://maps.app.goo.gl/YuwbKeuR1KXYhgaCA" target="_blank" rel="noreferrer" className="flex items-center justify-center w-[44px] h-[44px] text-white hover:text-[#D4AF37] transition-colors shrink-0"><MapPin size={18} className="text-[#D4AF37]" /></a>
-          <div className="w-[1px] h-5 bg-white/20 shrink-0"></div>
-          <button onClick={scrollToBooking} className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.1em] px-3 h-[44px] flex items-center justify-center hover:text-white transition-colors shrink-0">Book Now</button>
-        </div>
-      </div>
-
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
-
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
